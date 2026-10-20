@@ -1,0 +1,33 @@
+
+<div class="container mt-5">
+  <h2>Discover Events</h2>
+
+  {{> message}}
+
+  <div class="row row-cols-1 row-cols-md-3 g-4">
+    {{#each results}}
+      <div class="col">
+        <div class="card h-100">
+
+          <img src="{{image}}"
+               class="card-img-top"
+               alt="{{name}}">
+
+          <div class="card-body">
+            <h5 class="card-title">{{name}}</h5>
+
+            <p class="card-text">
+              Date: {{date}} <br>
+              Time: {{time}}
+            </p>
+
+            <a href="{{url}}" class="btn btn-primary">
+              Book Now
+            </a>
+          </div>
+
+        </div>
+      </div>
+    {{/each}}
+  </div>
+</div>
