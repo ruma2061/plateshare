@@ -149,17 +149,22 @@ app.post('/login', async (req, res) => {
         [username]        
     );
     if (!user) {
-        return res.redirect('/register');
+      return res.render('pages/login', {
+        message: 'Incorrect username or password.',
+        error: true
+      });
     }
 
-    const match = await bcrypt.compare(password, user.password);
+    const match = await bcrypt.compare(password, user.password_hash);
     if (!match) {
         return res.render('pages/login', {
             message: 'Incorrect username or password.',
             error: true
         });
     }
-    req.session.user = { username: user.username };
+    req.session.user = { 
+      user_id: user.user_id,
+      username: user.username };
     req.session.save((err) => {
         if (err) {
             return res.status(500).send('Session error');
@@ -178,11 +183,18 @@ app.post('/register', async (req, res) => {
   try {
     const hash = await bcrypt.hash(req.body.password, 10);
     await db.none(
-    'INSERT INTO users (username, password) VALUES ($1, $2);',
+    'INSERT INTO users (username, password_hash) VALUES ($1, $2);',
     [req.body.username, hash]
     );
     res.redirect('/login');
   } catch (error) {
+    if(error.code === '23505') {
+      return res.status(409).render('pages/register', {
+        message: 'Username already exists.',
+        error: true
+      });
+    }
+
     console.error(error);
     res.status(500).send('Registration Failed');
   }
