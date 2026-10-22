@@ -1,11 +1,11 @@
 services:
   db:
-    image: postgres
+    image: postgres:17
     env_file: .env
     expose:
       - '5432'
     volumes:
-      - lab-07-web-services:/var/lib/postgresql
+      - plateshare-db:/var/lib/postgresql/data
       - ./init_data:/docker-entrypoint-initdb.d
   web:
     image: node:lts
@@ -26,4 +26,4 @@ services:
 # run `docker-compose rm -v`. Note that this will remove ALL of your data, so
 # be extra sure you've made a stable backup somewhere.
 volumes:
-  lab-07-web-services:
+  plateshare-db:
