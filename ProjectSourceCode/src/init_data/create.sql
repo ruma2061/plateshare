@@ -87,3 +87,5 @@ CREATE TABLE IF NOT EXISTS ratings (
     -- Each user can rate a recipe only once
     UNIQUE (recipe_id, user_id)
 );
+
+-- IMAGES
