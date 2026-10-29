@@ -64,6 +64,12 @@ app.use(
   })
 );
 
+// make the logged in user available in all views
+app.use((req, res, next) => {
+  res.locals.user = req.session.user;
+  next();
+});
+
 app.use(
   bodyParser.urlencoded({
     extended: true,
@@ -76,15 +82,24 @@ app.use(
 
 // TODO - Include your API routes here
 app.get('/', (req, res) => {
-  res.redirect('/login'); 
+  if (req.session.user) {
+    return res.redirect('/discover');
+  }
+  res.redirect('/login');
 });
 
 app.get('/register', (req, res) => {
-    res.render('pages/register');
+  if (req.session.user) {
+    return res.redirect('/discover');
+  }
+  res.render('pages/register');
 });
 
 app.get('/login', (req, res) => {
-    res.render('pages/login');
+  if (req.session.user) {
+    return res.redirect('/discover');
+  }
+  res.render('pages/login');
 });
 
 app.get('/logout', (req, res) => {
@@ -92,6 +107,7 @@ app.get('/logout', (req, res) => {
     if (err) {
       return res.status(500).send('Logout failed');
     }
+    res.locals.user = null;
     res.render('pages/logout', {
       message: 'Logged out Successfully'
     });
