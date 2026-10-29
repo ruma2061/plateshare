@@ -158,7 +158,7 @@ app.get('/discover', auth, async (req, res) => {
 
 app.post('/login', async (req, res) => {
   try {
-    const username = req.body.username;
+    const username = (req.body.username || '').trim();
     const password = req.body.password;
     const user = await db.oneOrNone(
         'SELECT * FROM users WHERE username = $1',
@@ -196,23 +196,50 @@ app.post('/login', async (req, res) => {
   }
 });
 app.post('/register', async (req, res) => {
+  const username = (req.body.username || '').trim();
+  const password = req.body.password || '';
+  const confirmPassword = req.body.confirm_password || '';
+
+  // check the input on the server too, the form checks can be skipped
+  let error;
+  if (!/^[A-Za-z0-9_]{3,20}$/.test(username)) {
+    error = 'Username must be 3-20 characters and only use letters, numbers, or underscores.';
+  } else if (password.length < 8) {
+    error = 'Password must be at least 8 characters.';
+  } else if (password !== confirmPassword) {
+    error = 'Passwords do not match.';
+  }
+
+  if (error) {
+    return res.status(400).render('pages/register', {
+      message: error,
+      error: true,
+      username
+    });
+  }
+
   try {
-    const hash = await bcrypt.hash(req.body.password, 10);
+    const hash = await bcrypt.hash(password, 10);
     await db.none(
-    'INSERT INTO users (username, password_hash) VALUES ($1, $2);',
-    [req.body.username, hash]
+      'INSERT INTO users (username, password_hash) VALUES ($1, $2);',
+      [username, hash]
     );
     res.redirect('/login');
   } catch (error) {
-    if(error.code === '23505') {
+    if (error.code === '23505') {
       return res.status(409).render('pages/register', {
         message: 'Username already exists.',
-        error: true
+        error: true,
+        username
       });
     }
 
     console.error(error);
-    res.status(500).send('Registration Failed');
+    res.status(500).render('pages/register', {
+      message: 'Registration failed, try again.',
+      error: true,
+      username
+    });
   }
 });
 
