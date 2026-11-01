@@ -1,0 +1,15 @@
+<div class="container mt-4">
+
+  <h1>{{profileUser.username}}'s Profile</h1>
+
+  {{#if isOwnProfile}}
+    <p>Welcome to your profile!</p>
+
+    <a href="/profile/edit" class="btn btn-primary">
+      Edit Profile
+    </a>
+  {{else}}
+    <p>Viewing another user's profile</p>
+  {{/if}}
+
+</div>
