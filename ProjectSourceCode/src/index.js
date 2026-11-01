@@ -83,21 +83,21 @@ app.use(
 // TODO - Include your API routes here
 app.get('/', (req, res) => {
   if (req.session.user) {
-    return res.redirect('/discover');
+    return res.redirect('/profile');
   }
   res.redirect('/login');
 });
 
 app.get('/register', (req, res) => {
   if (req.session.user) {
-    return res.redirect('/discover');
+    return res.redirect('/profile');
   }
   res.render('pages/register');
 });
 
 app.get('/login', (req, res) => {
   if (req.session.user) {
-    return res.redirect('/discover');
+    return res.redirect('/profile');
   }
   res.render('pages/login');
 });
@@ -121,6 +121,51 @@ const auth = (req, res, next) => {
     }
     next();
 };
+
+
+/**
+ * GET /profile
+ * Redirect logged-in users to their own profile.
+ */
+app.get('/profile', (req, res) => {
+  return res.redirect(
+    `/profile/${encodeURIComponent(req.session.user.username)}`
+  );
+});
+
+
+app.get('/profile/:username', auth, async (req, res) => {
+  const username = req.params.username;
+
+  try {
+    const profileUser = await db.oneOrNone(
+      `SELECT user_id, username
+       FROM users
+       WHERE username = $1`,
+      [username]
+    );
+
+    // User doesn't exist
+    if (!profileUser) {
+      return res.status(404).send('User not found');
+    }
+
+    // Check whether this is the logged-in user's profile
+    const isOwnProfile =
+      String(req.session.user.user_id) ===
+      String(profileUser.user_id);
+
+    return res.render('pages/profile', {
+      profileUser,
+      isOwnProfile
+    });
+
+  } catch (error) {
+    console.error('Error loading profile:', error);
+    return res.status(500).send('Internal server error');
+  }
+});
+
 
 app.get('/discover', auth, async (req, res) => {
   try {
@@ -185,7 +230,7 @@ app.post('/login', async (req, res) => {
         if (err) {
             return res.status(500).send('Session error');
         }
-        res.redirect('/discover');
+        res.redirect('/profile');
     });
   } catch (err) {
     console.error(err)
@@ -198,16 +243,12 @@ app.post('/login', async (req, res) => {
 app.post('/register', async (req, res) => {
   const username = (req.body.username || '').trim();
   const password = req.body.password || '';
-  const confirmPassword = req.body.confirm_password || '';
-
   // check the input on the server too, the form checks can be skipped
   let error;
   if (!/^[A-Za-z0-9_]{3,20}$/.test(username)) {
     error = 'Username must be 3-20 characters and only use letters, numbers, or underscores.';
   } else if (password.length < 8) {
     error = 'Password must be at least 8 characters.';
-  } else if (password !== confirmPassword) {
-    error = 'Passwords do not match.';
   }
 
   if (error) {
@@ -224,7 +265,7 @@ app.post('/register', async (req, res) => {
       'INSERT INTO users (username, password_hash) VALUES ($1, $2);',
       [username, hash]
     );
-    res.redirect('/login');
+    return res.redirect('/login');
   } catch (error) {
     if (error.code === '23505') {
       return res.status(409).render('pages/register', {

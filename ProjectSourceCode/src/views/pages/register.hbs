@@ -2,6 +2,12 @@
 <div class="container mt-5">
   <h2>Register</h2>
 
+  {{#if error}}
+    <div class="alert alert-danger" role="alert">
+      {{message}}
+    </div>
+  {{/if}}
+
   <form action="/register" method="POST">
     <div class="mb-3">
       <label for="username" class="form-label">Username</label>
@@ -10,6 +16,7 @@
         class="form-control"
         id="username"
         name="username"
+        value="{{username}}"
         required
       />
     </div>
@@ -25,6 +32,8 @@
       />
     </div>
 
-    <button type="submit" class="btn btn-primary">Register</button>
+    <button type="submit" class="btn btn-primary">
+      Register
+    </button>
   </form>
 </div>
