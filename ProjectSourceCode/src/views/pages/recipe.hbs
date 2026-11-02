@@ -1,0 +1,54 @@
+<main class="container recipe-page recipe-detail py-4 py-md-5">
+  <a class="recipe-title-link" href="/recipes">← All recipes</a>
+  <article class="mt-4">
+    {{#if recipe.image_url}}<img class="recipe-hero mb-4" src="{{recipe.image_url}}" alt="{{recipe.title}}" referrerpolicy="no-referrer">{{/if}}
+    <p class="recipe-eyebrow mb-2">{{#if recipe.cuisine}}{{recipe.cuisine}}{{else}}From the community{{/if}}</p>
+    <h1 class="fw-bold">{{recipe.title}}</h1>
+    <p class="text-secondary">By {{recipe.author}}{{#if recipe.servings}} · Serves {{recipe.servings}}{{/if}}</p>
+    {{#if recipe.description}}<p>{{recipe.description}}</p>{{/if}}
+    <div class="d-flex flex-wrap align-items-center gap-3 mb-4">
+      {{> recipe-save recipe=recipe csrfToken=csrfToken returnTo=returnTo}}
+      <span class="small fw-semibold">{{#if recipe.user_rating}}Your rating: {{recipe.user_rating}} / 5{{else}}You have not rated this recipe{{/if}}</span>
+    </div>
+
+    <section id="nutrition" class="mb-4" aria-labelledby="nutrition-title">
+      <h2 id="nutrition-title" class="h4">Nutrition</h2>
+      {{> nutrition recipe=recipe}}
+      <p class="small text-secondary mt-2">Values are provided with the recipe. Missing values are not counted as zero.</p>
+      {{#if isOwner}}
+        <details class="recipe-editor mt-3" {{#if nutritionError}}open{{/if}}>
+          <summary class="fw-semibold">Edit nutrition</summary>
+          <p class="small text-secondary mt-3" id="nutrition-help">Enter amounts for one serving. Leave any unknown measurement blank.</p>
+          {{#if nutritionError}}<div class="alert alert-danger" role="alert">{{nutritionError}}</div>{{/if}}
+          <form method="post" action="/recipes/{{recipe.recipe_id}}/nutrition">
+            <input type="hidden" name="_csrf" value="{{csrfToken}}">
+            <div class="row g-3">
+              {{#each nutritionInputs}}
+                <div class="col-12 col-sm-6">
+                  <label for="nutrition-{{name}}" class="form-label">{{label}} ({{unit}})</label>
+                  <input class="form-control" id="nutrition-{{name}}" name="{{name}}" type="number" min="0" max="99999999.99" step="0.01" value="{{value}}" inputmode="decimal" aria-describedby="nutrition-help">
+                </div>
+              {{/each}}
+            </div>
+            <button type="submit" class="btn btn-success mt-3">Save nutrition</button>
+          </form>
+        </details>
+      {{/if}}
+    </section>
+
+    <div class="row g-4">
+      <section class="col-12 col-md-5" aria-labelledby="ingredients-title">
+        <h2 id="ingredients-title" class="h4">Ingredients</h2>
+        {{#if ingredients.length}}
+          <ul class="ps-3">
+            {{#each ingredients}}<li class="mb-2">{{quantity}} {{unit}} {{name}}{{#if notes}} — {{notes}}{{/if}}</li>{{/each}}
+          </ul>
+        {{else}}<p class="text-secondary">Ingredients have not been listed yet.</p>{{/if}}
+      </section>
+      <section class="col-12 col-md-7" aria-labelledby="directions-title">
+        <h2 id="directions-title" class="h4">Directions</h2>
+        <p class="recipe-directions">{{recipe.directions}}</p>
+      </section>
+    </div>
+  </article>
+</main>

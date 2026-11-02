@@ -2,6 +2,8 @@
 // <!-- Section 1 : Import Dependencies -->
 // *****************************************************
 
+const { createRecipeRouter } = require('./recipes/router');
+const auth = require('./middleware/auth');
 const express = require('express'); // To build an application server or API
 const app = express();
 const handlebars = require('express-handlebars'); //to enable express to work with handlebars
@@ -115,19 +117,15 @@ app.get('/logout', (req, res) => {
 });
 
 
-const auth = (req, res, next) => {
-    if (!req.session.user) {
-        return res.redirect('/login');
-    }
-    next();
-};
+app.use('/resources', express.static(path.join(__dirname, 'resources')));
+app.use(createRecipeRouter(db));
 
 
 /**
  * GET /profile
  * Redirect logged-in users to their own profile.
  */
-app.get('/profile', (req, res) => {
+app.get('/profile', auth, (req, res) => {
   return res.redirect(
     `/profile/${encodeURIComponent(req.session.user.username)}`
   );

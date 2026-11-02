@@ -1,0 +1,8 @@
+<form method="post" action="/recipes/{{recipe.recipe_id}}/{{#if recipe.is_saved}}unsave{{else}}save{{/if}}">
+  <input type="hidden" name="_csrf" value="{{csrfToken}}">
+  <input type="hidden" name="returnTo" value="{{returnTo}}">
+  <button class="btn btn-sm {{#if recipe.is_saved}}btn-outline-success{{else}}btn-success{{/if}}" type="submit"
+          aria-label="{{#if recipe.is_saved}}Remove {{recipe.title}} from saved recipes{{else}}Save {{recipe.title}}{{/if}}">
+    {{#if recipe.is_saved}}Remove saved recipe{{else}}Save recipe{{/if}}
+  </button>
+</form>

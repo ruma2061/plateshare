@@ -1,0 +1,5 @@
+<nav class="d-flex align-items-center justify-content-center gap-3 mt-4" aria-label="Recipe pages">
+  {{#if previousUrl}}<a class="btn btn-outline-success btn-sm" href="{{previousUrl}}" rel="prev">Previous</a>{{/if}}
+  <span class="small text-secondary">Page {{page}} of {{pageCount}}</span>
+  {{#if nextUrl}}<a class="btn btn-outline-success btn-sm" href="{{nextUrl}}" rel="next">Next</a>{{/if}}
+</nav>
