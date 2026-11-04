@@ -77,10 +77,10 @@ app.use(
 );
 
 // *****************************************************
-// <!-- Section 4 : API Routes -->
+//              API Routes
 // *****************************************************
 
-// TODO - Include your API routes here
+
 app.get('/', (req, res) => {
   if (req.session.user) {
     return res.redirect('/profile');
