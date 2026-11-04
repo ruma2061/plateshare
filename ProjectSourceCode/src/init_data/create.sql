@@ -6,9 +6,10 @@
 -- 1. USERS
 CREATE TABLE IF NOT EXISTS users (
     user_id SERIAL PRIMARY KEY,
-    username VARCHAR(50) UNIQUE NOT NULL,
+    username VARCHAR(20) UNIQUE NOT NULL,
     password_hash VARCHAR(255) NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    is_private BOOLEAN NOT NULL DEFAULT FALSE
 );
 
 
@@ -88,4 +89,24 @@ CREATE TABLE IF NOT EXISTS ratings (
     UNIQUE (recipe_id, user_id)
 );
 
--- IMAGES
+CREATE TABLE IF NOT EXISTS follows (
+    follower_id INTEGER NOT NULL
+        REFERENCES users(user_id) ON DELETE CASCADE,
+    following_id INTEGER NOT NULL
+        REFERENCES users(user_id) ON DELETE CASCADE,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+
+    PRIMARY KEY (follower_id, following_id),
+    CHECK (follower_id <> following_id)
+);
+
+CREATE TABLE IF NOT EXISTS follow_requests (
+    requester_id INTEGER NOT NULL
+        REFERENCES users(user_id) ON DELETE CASCADE,
+    recipient_id INTEGER NOT NULL
+        REFERENCES users(user_id) ON DELETE CASCADE,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+
+    PRIMARY KEY (requester_id, recipient_id),
+    CHECK (requester_id <> recipient_id)
+);

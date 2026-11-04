@@ -1,15 +1,112 @@
+
 <div class="container mt-4">
 
   <h1>{{profileUser.username}}'s Profile</h1>
+  
+    <div class="d-flex gap-4 my-3">
+
+      {{#if canViewContent}}
+
+        <a href="/profile/{{profileUser.username}}/followers"
+          class="text-decoration-none text-dark">
+          <strong>{{followersCount}}</strong> Followers
+        </a>
+
+        <a href="/profile/{{profileUser.username}}/following"
+          class="text-decoration-none text-dark">
+          <strong>{{followingCount}}</strong> Following
+        </a>
+
+      {{else}}
+
+        <span>
+          <strong>{{followersCount}}</strong> Followers
+        </span>
+
+        <span>
+          <strong>{{followingCount}}</strong> Following
+        </span>
+
+      {{/if}}
+
+    </div>
 
   {{#if isOwnProfile}}
+
     <p>Welcome to your profile!</p>
 
     <a href="/profile/edit" class="btn btn-primary">
       Edit Profile
     </a>
+
+    <a href="/follow/requests"
+      class="btn btn-outline-primary position-relative ms-2">
+
+      Follow Requests
+
+      {{#if followRequestBadge}}
+        <span class="position-absolute top-0 start-100 translate-middle
+                    badge rounded-pill bg-danger">
+          {{followRequestBadge}}
+          <span class="visually-hidden">pending follow requests</span>
+        </span>
+      {{/if}}
+
+    </a>
+
   {{else}}
-    <p>Viewing another user's profile</p>
+
+    {{#if profileUser.is_private}}
+      <p class="text-muted">Private Account</p>
+    {{/if}}
+
+    {{#if isFollowing}}
+
+      <form action="/unfollow/{{profileUser.user_id}}"
+            method="POST">
+
+        <button type="submit" class="btn btn-outline-danger">
+          Unfollow
+        </button>
+
+      </form>
+
+    {{else}}
+
+      {{#if requestPending}}
+
+        <form action="/follow/cancel/{{profileUser.user_id}}"
+              method="POST">
+
+          <button type="submit" class="btn btn-secondary">
+            Cancel Request
+          </button>
+
+        </form>
+
+      {{else}}
+
+        <form action="/follow/{{profileUser.user_id}}"
+              method="POST">
+
+          <button type="submit" class="btn btn-primary">
+            Follow
+          </button>
+
+        </form>
+
+      {{/if}}
+
+    {{/if}}
+
   {{/if}}
 
+  {{#unless canViewContent}}
+    <div class="text-center mt-5">
+      <h4>This account is private</h4>
+      <p class="text-muted">
+        Follow this user to see their recipes and activity.
+      </p>
+    </div>
+  {{/unless}}
 </div>

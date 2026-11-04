@@ -102,15 +102,13 @@ app.get('/login', (req, res) => {
   res.render('pages/login');
 });
 
-app.get('/logout', (req, res) => {
+app.post('/logout', (req, res) => {
   req.session.destroy((err) => {
     if (err) {
       return res.status(500).send('Logout failed');
     }
-    res.locals.user = null;
-    res.render('pages/logout', {
-      message: 'Logged out Successfully'
-    });
+    res.clearCookie('connect.sid');
+    return res.redirect(303,'/login');
   });
 });
 
@@ -122,42 +120,136 @@ const auth = (req, res, next) => {
     next();
 };
 
-
 /**
  * GET /profile
  * Redirect logged-in users to their own profile.
  */
-app.get('/profile', (req, res) => {
+app.get('/profile', auth, (req, res) => {
   return res.redirect(
     `/profile/${encodeURIComponent(req.session.user.username)}`
   );
 });
 
+async function canViewProfileContent(viewerId, profileUser) {
+  // Users can always view their own content
+  if (Number(viewerId) === Number(profileUser.user_id)) {
+    return true;
+  }
+
+  // Public profiles are visible
+  if (!profileUser.is_private) {
+    return true;
+  }
+
+  // Private profiles require an established follow
+  const result = await db.one(
+    `SELECT EXISTS (
+       SELECT 1 FROM follows
+       WHERE follower_id = $1 AND following_id = $2
+     ) AS allowed`,
+    [viewerId, profileUser.user_id]
+  );
+
+  return result.allowed;
+}
+
+app.get('/profile/edit', auth, async (req, res) => {
+  try {
+    const profileUser = await db.one(
+      `SELECT username, is_private
+       FROM users
+       WHERE user_id = $1`,
+      [req.session.user.user_id]
+    );
+
+    return res.render('pages/edit-profile', {
+      profileUser
+    });
+
+  } catch (error) {
+    console.error('Error loading profile settings:', error);
+    return res.status(500).send('Unable to load settings');
+  }
+});
 
 app.get('/profile/:username', auth, async (req, res) => {
   const username = req.params.username;
+  const currentUserId = req.session.user.user_id;
 
   try {
+    // Get the profile being viewed
     const profileUser = await db.oneOrNone(
-      `SELECT user_id, username
+      `SELECT user_id, username, is_private
        FROM users
        WHERE username = $1`,
       [username]
     );
 
-    // User doesn't exist
     if (!profileUser) {
       return res.status(404).send('User not found');
     }
 
-    // Check whether this is the logged-in user's profile
+    const counts = await db.one(
+      `SELECT
+        (SELECT COUNT(*) FROM follows
+          WHERE following_id = $1) AS followers_count,
+
+        (SELECT COUNT(*) FROM follows
+          WHERE follower_id = $1) AS following_count`,
+      [profileUser.user_id]
+    );
+
+    // Check if viewing your own profile
     const isOwnProfile =
-      String(req.session.user.user_id) ===
-      String(profileUser.user_id);
+      Number(currentUserId) === Number(profileUser.user_id);
+    let followRequestBadge = null;
+
+    if (isOwnProfile) {
+      const result = await db.one(
+        `SELECT COUNT(*)::int AS count
+        FROM follow_requests
+        WHERE recipient_id = $1`,
+        [currentUserId]
+      );
+
+      if (result.count > 0) {
+        followRequestBadge =
+          result.count > 99 ? '99+' : String(result.count);
+      }
+    }
+    let isFollowing = false;
+    let requestPending = false;
+
+    if (!isOwnProfile) {
+      // Check for an existing follow or outgoing request
+      const relationship = await db.one(
+        `SELECT
+           EXISTS (
+             SELECT 1 FROM follows
+             WHERE follower_id = $1 AND following_id = $2
+           ) AS is_following,
+           EXISTS (
+             SELECT 1 FROM follow_requests
+             WHERE requester_id = $1 AND recipient_id = $2
+           ) AS request_pending`,
+        [currentUserId, profileUser.user_id]
+      );
+
+      isFollowing = relationship.is_following;
+      requestPending = relationship.request_pending;
+    }
+    const canViewContent =
+      isOwnProfile || !profileUser.is_private || isFollowing;
 
     return res.render('pages/profile', {
       profileUser,
-      isOwnProfile
+      isOwnProfile,
+      isFollowing,
+      requestPending,
+      canViewContent,
+      followersCount: counts.followers_count,
+      followingCount: counts.following_count,
+      followRequestBadge
     });
 
   } catch (error) {
@@ -166,36 +258,117 @@ app.get('/profile/:username', auth, async (req, res) => {
   }
 });
 
-
-app.get('/discover', auth, async (req, res) => {
+app.get('/profile/:username/followers', auth, async (req, res) => {
   try {
-    const response = await axios.get(
-      'https://app.ticketmaster.com/discovery/v2/events.json',
-      {
-        params: {
-          apikey: process.env.API_KEY,
-          keyword: 'music',
-          size:10
-        }
-      }
+    const profileUser = await db.oneOrNone(
+      'SELECT user_id, username, is_private FROM users WHERE username = $1',
+      [req.params.username]
     );
 
-    const events = response.data._embedded?.events || [];
+    if (!profileUser) {
+      return res.status(404).send('User not found');
+    }
 
-    const results = events.map(event => ({
-      name: event.name,
-      image: event.images?.[0]?.url || 'https://placehold.co/400x250',
-      date: event.dates?.start?.localDate || 'N/A',
-      time: event.dates?.start?.localTime || 'N/A',
-      url: event.url
-    }));
-    res.render('pages/discover', {results});
+    const canView = await canViewProfileContent(
+      req.session.user.user_id,
+      profileUser
+    );
 
-  } catch (err) {
-    console.error(err);
-    res.render('pages/discover', {
-      results: [],
-      message: "Unable to load events.",
+    if (!canView) {
+      return res.status(403).send('This account is private');
+    }
+
+    const users = await db.any(
+      `SELECT u.user_id, u.username
+       FROM follows f
+       JOIN users u ON f.follower_id = u.user_id
+       WHERE f.following_id = $1
+       ORDER BY u.username`,
+      [profileUser.user_id]
+    );
+
+    return res.render('pages/follow-list', {
+      profileUser,
+      users,
+      listTitle: 'Followers',
+      emptyMessage: 'No followers yet.',
+      canRemoveFollowers:
+        Number(req.session.user.user_id) === Number(profileUser.user_id)
+    });
+
+  } catch (error) {
+    console.error('Error loading followers:', error);
+    return res.status(500).send('Unable to load followers');
+  }
+});
+
+app.get('/profile/:username/following', auth, async (req, res) => {
+  try {
+    const profileUser = await db.oneOrNone(
+      'SELECT user_id, username, is_private FROM users WHERE username = $1',
+      [req.params.username]
+    );
+
+    if (!profileUser) {
+      return res.status(404).send('User not found');
+    }
+
+    const canView = await canViewProfileContent(
+      req.session.user.user_id,
+      profileUser
+    );
+
+    if (!canView) {
+      return res.status(403).send('This account is private');
+    }
+
+    const users = await db.any(
+      `SELECT u.user_id, u.username
+       FROM follows f
+       JOIN users u ON f.following_id = u.user_id
+       WHERE f.follower_id = $1
+       ORDER BY u.username`,
+      [profileUser.user_id]
+    );
+
+    return res.render('pages/follow-list', {
+      profileUser,
+      users,
+      listTitle: 'Following',
+      emptyMessage: 'Not following anyone yet.'
+    });
+
+  } catch (error) {
+    console.error('Error loading following:', error);
+    return res.status(500).send('Unable to load following list');
+  }
+});
+
+app.get('/discover', auth, async (req, res) => {
+  const query = (req.query.q || '').trim();
+
+  try {
+    const profiles = await db.any(
+      `SELECT user_id, username, is_private
+       FROM users
+       WHERE user_id <> $1
+         AND username ILIKE $2
+       ORDER BY username
+       LIMIT 20`,
+      [req.session.user.user_id, `%${query}%`]
+    );
+
+    return res.render('pages/discover', {
+      profiles,
+      query
+    });
+
+  } catch (error) {
+    console.error('Error searching users:', error);
+    return res.status(500).render('pages/discover', {
+      profiles: [],
+      query,
+      message: 'Unable to search users.',
       error: true
     });
   }
@@ -283,6 +456,346 @@ app.post('/register', async (req, res) => {
     });
   }
 });
+
+app.post('/follow/:userId', auth, async (req,res) => {
+  const followerId = req.session.user.user_id;
+  const followingId = Number(req.params.userId);
+  // Validate target user ID
+  if (!Number.isSafeInteger(followingId) || followingId <= 0) {
+    return res.status(400).send('Invalid user ID');
+  }
+
+  // Cannot follow yourself
+  if (Number(followerId) === followingId) {
+    return res.status(400).send('Cannot follow yourself');
+  }
+
+  try {
+    const result = await db.tx(async (t) => {
+      // Find target user and check their privacy setting
+      const targetUser = await t.oneOrNone(
+        `SELECT user_id, username, is_private
+         FROM users
+         WHERE user_id = $1
+         FOR UPDATE`,
+        [followingId]
+      );
+
+      if (!targetUser) {
+        return null;
+      }
+
+      // Check if already following
+      const existingFollow = await t.oneOrNone(
+        `SELECT 1 FROM follows
+         WHERE follower_id = $1 AND following_id = $2`,
+        [followerId, followingId]
+      );
+
+      if (existingFollow) {
+        return targetUser;
+      }
+
+      // Check if request already sent
+      const existingRequest = await t.oneOrNone(
+        `SELECT 1 FROM follow_requests
+         WHERE requester_id = $1 AND recipient_id = $2`,
+        [followerId, followingId]
+      );
+
+      if (existingRequest) {
+        return targetUser;
+      }
+
+      if (targetUser.is_private) {
+        // Private account: send a follow request
+        await t.none(
+          `INSERT INTO follow_requests
+           (requester_id, recipient_id)
+           VALUES ($1, $2)`,
+          [followerId, followingId]
+        );
+      } else {
+        // Public account: follow immediately
+        await t.none(
+          `INSERT INTO follows
+           (follower_id, following_id)
+           VALUES ($1, $2)`,
+          [followerId, followingId]
+        );
+      }
+
+      return targetUser;
+    });
+
+    if (!result) {
+      return res.status(404).send('User not found');
+    }
+
+    return res.redirect(
+      303,
+      `/profile/${encodeURIComponent(result.username)}`
+    );
+
+  } catch (error) {
+    console.error('Follow error:', error);
+    return res.status(500).send('Unable to follow user');
+  }
+});
+
+app.get('/follow/requests', auth, async (req, res) => {
+  const userId = req.session.user.user_id;
+
+  try {
+    const requests = await db.any(
+      `SELECT u.user_id, u.username
+       FROM follow_requests fr
+       JOIN users u ON u.user_id = fr.requester_id
+       WHERE fr.recipient_id = $1
+       ORDER BY fr.created_at DESC`,
+      [userId]
+    );
+
+    return res.render('pages/follow-requests', {
+      requests
+    });
+
+  } catch (error) {
+    console.error('Error loading requests:', error);
+    return res.status(500).send('Unable to load requests');
+  }
+});
+
+app.post('/follow/accept/:userId', auth, async (req, res) => {
+  const recipientId = req.session.user.user_id;
+  const requesterId = Number(req.params.userId);
+
+  if (!Number.isSafeInteger(requesterId) || requesterId <= 0) {
+    return res.status(400).send('Invalid user ID');
+  }
+
+  try {
+    const accepted = await db.tx(async (t) => {
+      // Coordinate with privacy changes and follow requests
+      await t.one(
+        `SELECT user_id FROM users
+         WHERE user_id = $1 FOR UPDATE`,
+        [recipientId]
+      );
+
+      // Only the recipient can accept this request
+      const request = await t.oneOrNone(
+        `SELECT requester_id
+         FROM follow_requests
+         WHERE requester_id = $1 AND recipient_id = $2
+         FOR UPDATE`,
+        [requesterId, recipientId]
+      );
+
+      if (!request) return false;
+
+      await t.none(
+        `INSERT INTO follows (follower_id, following_id)
+         VALUES ($1, $2)
+         ON CONFLICT DO NOTHING`,
+        [requesterId, recipientId]
+      );
+
+      await t.none(
+        `DELETE FROM follow_requests
+         WHERE requester_id = $1 AND recipient_id = $2`,
+        [requesterId, recipientId]
+      );
+
+      return true;
+    });
+
+    if (!accepted) {
+      return res.status(404).send('Request not found');
+    }
+
+    return res.redirect(303, '/follow/requests');
+
+  } catch (error) {
+    console.error('Accept request error:', error);
+    return res.status(500).send('Unable to accept request');
+  }
+});
+
+app.post('/follow/decline/:userId', auth, async (req, res) => {
+  const recipientId = req.session.user.user_id;
+  const requesterId = Number(req.params.userId);
+
+  if (!Number.isSafeInteger(requesterId) || requesterId <= 0) {
+    return res.status(400).send('Invalid user ID');
+  }
+
+  try {
+    await db.none(
+      `DELETE FROM follow_requests
+       WHERE requester_id = $1 AND recipient_id = $2`,
+      [requesterId, recipientId]
+    );
+
+    return res.redirect(303, '/follow/requests');
+
+  } catch (error) {
+    console.error('Decline request error:', error);
+    return res.status(500).send('Unable to decline request');
+  }
+});
+
+
+app.post('/follow/cancel/:userId', auth, async (req, res) => {
+  const requesterId = req.session.user.user_id;
+  const recipientId = Number(req.params.userId);
+
+  if (!Number.isSafeInteger(recipientId) || recipientId <= 0) {
+    return res.status(400).send('Invalid user ID');
+  }
+
+  try {
+    const targetUser = await db.oneOrNone(
+      'SELECT username FROM users WHERE user_id = $1',
+      [recipientId]
+    );
+
+    if (!targetUser) {
+      return res.status(404).send('User not found');
+    }
+
+    await db.none(
+      `DELETE FROM follow_requests
+       WHERE requester_id = $1 AND recipient_id = $2`,
+      [requesterId, recipientId]
+    );
+
+    return res.redirect(
+      303,
+      `/profile/${encodeURIComponent(targetUser.username)}`
+    );
+
+  } catch (error) {
+    console.error('Cancel request error:', error);
+    return res.status(500).send('Unable to cancel request');
+  }
+});
+
+app.post('/unfollow/:userId', auth, async (req, res) => {
+  const followerId = req.session.user.user_id;
+  const followingId = Number(req.params.userId);
+
+  if (!Number.isSafeInteger(followingId) || followingId <= 0) {
+    return res.status(400).send('Invalid user ID');
+  }
+
+  try {
+    const targetUser = await db.oneOrNone(
+      'SELECT username FROM users WHERE user_id = $1',
+      [followingId]
+    );
+
+    if (!targetUser) {
+      return res.status(404).send('User not found');
+    }
+
+    await db.none(
+      `DELETE FROM follows
+       WHERE follower_id = $1 AND following_id = $2`,
+      [followerId, followingId]
+    );
+
+    return res.redirect(
+      303,
+      `/profile/${encodeURIComponent(targetUser.username)}`
+    );
+
+  } catch (error) {
+    console.error('Unfollow error:', error);
+    return res.status(500).send('Unable to unfollow user');
+  }
+});
+
+app.post('/followers/remove/:userId', auth, async (req, res) => {
+  const currentUserId = req.session.user.user_id;
+  const followerId = Number(req.params.userId);
+
+  if (!Number.isSafeInteger(followerId) || followerId <= 0) {
+    return res.status(400).send('Invalid user ID');
+  }
+
+  try {
+    await db.none(
+      `DELETE FROM follows
+       WHERE follower_id = $1
+         AND following_id = $2`,
+      [followerId, currentUserId]
+    );
+
+    return res.redirect(
+      303,
+      `/profile/${encodeURIComponent(req.session.user.username)}/followers`
+    );
+
+  } catch (error) {
+    console.error('Remove follower error:', error);
+    return res.status(500).send('Unable to remove follower');
+  }
+});
+
+app.post('/profile/privacy', auth, async (req, res) => {
+  const isPrivate = req.body.is_private;
+
+  if (isPrivate !== 'true' && isPrivate !== 'false') {
+    return res.status(400).send('Invalid privacy setting');
+  }
+
+  const userId = req.session.user.user_id;
+  const makePrivate = isPrivate === 'true';
+
+  try {
+    await db.tx(async (t) => {
+      // Lock the user's row while changing privacy
+      await t.one(
+        'SELECT user_id FROM users WHERE user_id = $1 FOR UPDATE',
+        [userId]
+      );
+
+      await t.none(
+        `UPDATE users
+         SET is_private = $1
+         WHERE user_id = $2`,
+        [makePrivate, userId]
+      );
+
+      // When switching to public, approve pending requests
+      if (!makePrivate) {
+        await t.none(
+          `INSERT INTO follows (follower_id, following_id)
+           SELECT requester_id, recipient_id
+           FROM follow_requests
+           WHERE recipient_id = $1
+           ON CONFLICT DO NOTHING`,
+          [userId]
+        );
+
+        await t.none(
+          `DELETE FROM follow_requests
+           WHERE recipient_id = $1`,
+          [userId]
+        );
+      }
+    });
+
+    return res.redirect(303, '/profile');
+
+  } catch (error) {
+    console.error('Privacy update error:', error);
+    return res.status(500).send('Unable to update privacy');
+  }
+});
+
+
 
 // *****************************************************
 // <!-- Section 5 : Start Server-->

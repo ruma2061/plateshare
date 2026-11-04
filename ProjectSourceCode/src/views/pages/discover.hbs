@@ -1,33 +1,57 @@
 
-<div class="container mt-5">
-  <h2>Discover Events</h2>
+<div class="container mt-4">
 
-  {{> message}}
+  <h1>Find Users</h1>
+  <p>Search for other PlateShare users.</p>
 
-  <div class="row row-cols-1 row-cols-md-3 g-4">
-    {{#each results}}
-      <div class="col">
-        <div class="card h-100">
+  <form action="/discover" method="GET" class="mb-4">
+    <div class="input-group">
+      <input
+        type="text"
+        name="q"
+        class="form-control"
+        placeholder="Search usernames..."
+        value="{{query}}"
+      >
+      <button type="submit" class="btn btn-primary">
+        Search
+      </button>
+    </div>
+  </form>
 
-          <img src="{{image}}"
-               class="card-img-top"
-               alt="{{name}}">
+  {{#if error}}
+    <div class="alert alert-danger">
+      {{message}}
+    </div>
+  {{/if}}
 
-          <div class="card-body">
-            <h5 class="card-title">{{name}}</h5>
+  <div class="list-group">
+    {{#each profiles}}
+      <a href="/profile/{{this.username}}"
+         class="list-group-item list-group-item-action">
 
-            <p class="card-text">
-              Date: {{date}} <br>
-              Time: {{time}}
-            </p>
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <strong>{{this.username}}</strong>
 
-            <a href="{{url}}" class="btn btn-primary">
-              Book Now
-            </a>
+            {{#if this.is_private}}
+              <span class="badge bg-secondary ms-2">
+                Private
+              </span>
+            {{/if}}
           </div>
 
+          <span class="btn btn-outline-primary btn-sm">
+            View Profile
+          </span>
         </div>
-      </div>
+
+      </a>
+    {{else}}
+      <p class="text-muted">
+        No users found.
+      </p>
     {{/each}}
   </div>
+
 </div>
