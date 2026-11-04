@@ -1,39 +1,42 @@
+<div class="container mt-3 mt-md-5">
+  <div class="row justify-content-center">
+    <div class="col-12 col-sm-10 col-md-7 col-lg-5">
+      <h2>Register</h2>
 
-<div class="container mt-5">
-  <h2>Register</h2>
+      {{#if error}}
+        <div class="alert alert-danger" role="alert">
+          {{message}}
+        </div>
+      {{/if}}
 
-  {{#if error}}
-    <div class="alert alert-danger" role="alert">
-      {{message}}
+      <form action="/register" method="POST">
+        <div class="mb-3">
+          <label for="username" class="form-label">Username</label>
+          <input
+            type="text"
+            class="form-control"
+            id="username"
+            name="username"
+            value="{{username}}"
+            required
+          />
+        </div>
+
+        <div class="mb-3">
+          <label for="password" class="form-label">Password</label>
+          <input
+            type="password"
+            class="form-control"
+            id="password"
+            name="password"
+            required
+          />
+        </div>
+
+        <button type="submit" class="btn btn-primary w-100">
+          Register
+        </button>
+      </form>
     </div>
-  {{/if}}
-
-  <form action="/register" method="POST">
-    <div class="mb-3">
-      <label for="username" class="form-label">Username</label>
-      <input
-        type="text"
-        class="form-control"
-        id="username"
-        name="username"
-        value="{{username}}"
-        required
-      />
-    </div>
-
-    <div class="mb-3">
-      <label for="password" class="form-label">Password</label>
-      <input
-        type="password"
-        class="form-control"
-        id="password"
-        name="password"
-        required
-      />
-    </div>
-
-    <button type="submit" class="btn btn-primary">
-      Register
-    </button>
-  </form>
+  </div>
 </div>
