@@ -39,3 +39,23 @@ test('reapplying initialization and migration preserves accounts, recipes, ratin
   assert.equal((await db.one('SELECT rating FROM ratings WHERE recipe_id = 1')).rating, 4);
   assert.equal((await db.one('SELECT COUNT(*)::int AS count FROM saved_recipes')).count, 1);
 });
+
+test('legacy databases gain privacy and follow tables without resetting existing content', async () => {
+  const legacy = await createDatabase({ baseOnly: true });
+  try {
+    await legacy.engine.exec(`DROP TABLE follows, follow_requests;
+      ALTER TABLE users DROP COLUMN is_private;
+      INSERT INTO users (username, password_hash) VALUES ('legacy', 'hash');
+      INSERT INTO recipes (user_id, title, directions) VALUES (1, 'Original recipe', 'Cook');
+      INSERT INTO ratings (user_id, recipe_id, rating) VALUES (1, 1, 5);`);
+    await applySchema(legacy.engine);
+    const columns = await legacy.any("SELECT column_name FROM information_schema.columns WHERE table_name = 'users' AND column_name = 'is_private'");
+    assert.equal(columns.length, 1, 'The migration must add privacy to an existing users table');
+    assert.deepEqual(await legacy.one('SELECT username, is_private FROM users WHERE user_id = 1'), { username: 'legacy', is_private: false });
+    await applySchema(legacy.engine);
+    assert.equal((await legacy.one('SELECT rating FROM ratings WHERE recipe_id = 1')).rating, 5);
+    assert.equal((await legacy.one('SELECT title FROM recipes WHERE recipe_id = 1')).title, 'Original recipe');
+  } finally {
+    await legacy.engine.close();
+  }
+});

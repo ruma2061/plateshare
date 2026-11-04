@@ -1,41 +1,26 @@
-<header>
- <nav class="navbar navbar-expand-sm border-bottom">
-   <div class="container">
-     <button
-       class="navbar-toggler ms-auto"
-       type="button"
-       data-bs-toggle="collapse"
-       data-bs-target="#navbar-collapse"
-       aria-controls="navbar-collapse"
-       aria-expanded="false"
-       aria-label="Toggle navigation">
-       <span class="navbar-toggler-icon"></span>
-     </button>
-     <div class="collapse navbar-collapse" id="navbar-collapse">
-       {{#if user}}
-       <ul class="navbar-nav me-auto">
-         <li class="nav-item"><a class="nav-link" href="/recipes">Recipes</a></li>
-         <li class="nav-item"><a class="nav-link" href="/my-recipes">My Recipes</a></li>
-         <li class="nav-item"><a class="nav-link" href="/profile">Profile</a></li>
-         <li class="nav-item">
-           <a class="nav-link" href="/discover">Discover</a>
-         </li>
-       </ul>
-       <span class="navbar-text me-2">Hi, {{user.username}}</span>
-       <div class="nav-item me-1">
-         <a class="nav-link" href="/logout">Logout</a>
-       </div>
-       {{else}}
-       <ul class="navbar-nav ms-auto">
-         <li class="nav-item">
-           <a class="nav-link" href="/login">Login</a>
-         </li>
-         <li class="nav-item">
-           <a class="nav-link" href="/register">Register</a>
-         </li>
-       </ul>
-       {{/if}}
-     </div>
-   </div>
- </nav>
+<a class="skip-link" href="#main-content">Skip to content</a>
+<header class="site-header">
+  <nav class="container site-navigation" aria-label="Main navigation">
+    <a class="site-brand" href="{{#if user}}/recipes{{else}}/login{{/if}}">PlateShare<span aria-hidden="true">.</span></a>
+    {{#if user}}
+      <div class="desktop-navigation">
+        <a href="/recipes" {{#if recipesActive}}aria-current="page"{{/if}}>Discover</a>
+        <a href="/discover" {{#if discoverActive}}aria-current="page"{{/if}}>Find cooks</a>
+        <a href="/my-recipes" {{#if libraryActive}}aria-current="page"{{/if}}>My Recipes</a>
+        <a href="/profile" {{#if profileActive}}aria-current="page"{{/if}}>Profile</a>
+      </div>
+      <form action="/logout" method="post" class="site-logout">
+        <input type="hidden" name="_csrf" value="{{@root.csrfToken}}"><button type="submit">Log out<span class="visually-hidden"> {{user.username}}</span></button></form>
+    {{else}}
+      <div class="account-navigation"><a href="/login">Login</a><a href="/register">Register</a></div>
+    {{/if}}
+  </nav>
 </header>
+{{#if user}}
+  <nav class="mobile-navigation" aria-label="Mobile navigation">
+    <a href="/recipes" {{#if recipesActive}}aria-current="page"{{/if}}>{{> icon compass=true}}<span>Discover</span></a>
+    <a href="/discover" {{#if discoverActive}}aria-current="page"{{/if}}>{{> icon people=true}}<span>Find cooks</span></a>
+    <a href="/my-recipes" {{#if libraryActive}}aria-current="page"{{/if}}>{{> icon list=true}}<span>My Recipes</span></a>
+    <a href="/profile" {{#if profileActive}}aria-current="page"{{/if}}>{{> icon person=true}}<span>Profile</span></a>
+  </nav>
+{{/if}}

@@ -1,16 +1,19 @@
 <main class="container recipe-page recipe-detail py-4 py-md-5">
-  <a class="recipe-title-link" href="/recipes">← All recipes</a>
+  <a class="recipe-title-link" href="/recipes">{{> icon arrow=true}} All recipes</a>
   <article class="mt-4">
     {{#if recipe.image_url}}<img class="recipe-hero mb-4" src="{{recipe.image_url}}" alt="{{recipe.title}}" referrerpolicy="no-referrer">{{/if}}
     <p class="recipe-eyebrow mb-2">{{#if recipe.cuisine}}{{recipe.cuisine}}{{else}}From the community{{/if}}</p>
     <h1 class="fw-bold">{{recipe.title}}</h1>
-    <p class="text-secondary">By {{recipe.author}}{{#if recipe.servings}} · Serves {{recipe.servings}}{{/if}}</p>
+    <p class="text-secondary">By {{#if recipe.authorUrl}}<a class="recipe-author" href="{{recipe.authorUrl}}">{{recipe.author}}</a>{{else}}{{recipe.author}}{{/if}}{{#if recipe.hasTotalTime}} · {{recipe.totalMinutes}} min{{/if}}{{#if recipe.servings}} · Serves {{recipe.servings}}{{/if}}</p>
     {{#if recipe.description}}<p>{{recipe.description}}</p>{{/if}}
     <div class="d-flex flex-wrap align-items-center gap-3 mb-4">
       {{> recipe-save recipe=recipe csrfToken=csrfToken returnTo=returnTo}}
       <span class="small fw-semibold">{{#if recipe.user_rating}}Your rating: {{recipe.user_rating}} / 5{{else}}You have not rated this recipe{{/if}}</span>
     </div>
 
+    <nav class="recipe-section-links" aria-label="Recipe sections">
+      <a href="#ingredients-title">Ingredients ↗</a><a href="#directions-title">Steps ↗</a><a href="#nutrition">Nutrition ↗</a>
+    </nav>
     <section id="nutrition" class="mb-4" aria-labelledby="nutrition-title">
       <h2 id="nutrition-title" class="h4">Nutrition</h2>
       {{> nutrition recipe=recipe}}

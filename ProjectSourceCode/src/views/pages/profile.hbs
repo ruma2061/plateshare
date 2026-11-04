@@ -1,15 +1,156 @@
-<div class="container mt-4">
 
-  <h1>{{profileUser.username}}'s Profile</h1>
+<main class="container recipe-page profile-page py-4 py-md-5">
+
+  <p class="recipe-eyebrow">PlateShare · The people behind the plates</p>
+  <div class="profile-identity">
+    <span class="profile-avatar" aria-hidden="true">{{profileInitial}}</span>
+    <div><h1>{{profileUser.username}}'s Profile</h1>
+      <p class="text-secondary mb-0">Member since {{profileUser.member_since}} · {{#if profileUser.is_private}}Private account{{else}}Public account{{/if}}</p>
+    </div>
+  </div>
+
+    <div class="profile-connections">
+
+      {{#if canViewContent}}
+
+        <a href="/profile/{{profileUser.username}}/followers"
+          class="text-decoration-none text-dark">
+          <strong>{{followersCount}}</strong> Followers
+        </a>
+
+        <a href="/profile/{{profileUser.username}}/following"
+          class="text-decoration-none text-dark">
+          <strong>{{followingCount}}</strong> Following
+        </a>
+
+      {{else}}
+
+        <span>
+          <strong>{{followersCount}}</strong> Followers
+        </span>
+
+        <span>
+          <strong>{{followingCount}}</strong> Following
+        </span>
+
+      {{/if}}
+
+    </div>
 
   {{#if isOwnProfile}}
-    <p>Welcome to your profile!</p>
 
-    <a href="/profile/edit" class="btn btn-primary">
+    <p class="text-secondary">Your kitchen, shared. Keep track of what you make and what you love.</p>
+    <div class="profile-actions">
+
+    <a href="/profile/edit" class="btn btn-success">
       Edit Profile
     </a>
+
+    <a href="/follow/requests"
+      class="btn btn-outline-success position-relative">
+
+      Follow Requests
+
+      {{#if followRequestBadge}}
+        <span class="position-absolute top-0 start-100 translate-middle
+                    badge rounded-pill bg-danger">
+          {{followRequestBadge}}
+          <span class="visually-hidden">pending follow requests</span>
+        </span>
+      {{/if}}
+
+    </a>
+    </div>
+
   {{else}}
-    <p>Viewing another user's profile</p>
+
+    {{#if profileUser.is_private}}
+      <p class="profile-status">Private Account</p>
+    {{/if}}
+
+    {{#if isFollowing}}
+
+      <form action="/unfollow/{{profileUser.user_id}}"
+            method="POST">
+        <input type="hidden" name="_csrf" value="{{@root.csrfToken}}">
+
+        <button type="submit" class="btn btn-outline-danger">
+          Unfollow
+        </button>
+
+      </form>
+
+    {{else}}
+
+      {{#if requestPending}}
+
+        <form action="/follow/cancel/{{profileUser.user_id}}"
+              method="POST">
+        <input type="hidden" name="_csrf" value="{{@root.csrfToken}}">
+
+          <button type="submit" class="btn btn-secondary">
+            Cancel Request
+          </button>
+
+        </form>
+
+      {{else}}
+
+        <form action="/follow/{{profileUser.user_id}}"
+              method="POST">
+        <input type="hidden" name="_csrf" value="{{@root.csrfToken}}">
+
+          <button type="submit" class="btn btn-success">
+            Follow
+          </button>
+
+        </form>
+
+      {{/if}}
+
+    {{/if}}
+
   {{/if}}
 
-</div>
+  {{#if canViewContent}}
+    <div class="recipe-stats my-4" aria-label="Profile recipe activity">
+      <div><strong>{{stats.recipes}}</strong><span>Recipes shared</span></div>
+      <div><strong>{{stats.rated}}</strong><span>Recipes rated</span></div>
+      <div><strong>{{stats.cuisines}}</strong><span>Cuisines tried</span></div>
+    </div>
+    {{#if isOwnProfile}}<p><a class="recipe-title-link" href="/my-recipes">Your saved recipes ↗</a> <span class="small text-secondary">Only you can see your saved collection.</span></p>{{/if}}
+    <nav class="recipe-tabs mb-4" aria-label="Profile content">
+      <a href="{{postedUrl}}" {{#if isPosted}}class="active" aria-current="page"{{/if}}>Recipes · {{stats.recipes}}</a>
+      <a href="{{ratedUrl}}" {{#if isRated}}class="active" aria-current="page"{{/if}}>Ratings · {{stats.rated}}</a>
+    </nav>
+    {{> recipe-filters}}
+    <p class="small text-secondary">{{total}} recipes{{#if hasSearch}} matching “{{q}}”{{/if}}{{#if isRated}} · {{profileUser.username}}’s ratings out of 5{{/if}}</p>
+    {{#if recipes.length}}
+      {{#if isRated}}
+        <div class="recipe-ranking">
+          {{#each recipes}}{{> recipe-row recipe=this profileRating=true ratingUsername=@root.profileUser.username}}{{/each}}
+        </div>
+      {{else}}
+        <div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-4">
+          {{#each recipes}}<div class="col">{{> recipe-card recipe=this csrfToken=@root.csrfToken returnTo=@root.returnTo}}</div>{{/each}}
+        </div>
+      {{/if}}
+      {{> recipe-pagination}}
+    {{else}}
+      <section class="recipe-empty text-center p-4 p-md-5">
+        <h2 class="h4">{{#if hasSearch}}No matching recipes{{else if isRated}}No ratings yet{{else}}No recipes shared yet{{/if}}</h2>
+        <p class="text-secondary">{{#if hasSearch}}Try another recipe name or cuisine.{{else if isRated}}Recipes this cook rates will appear here.{{else}}This cook’s recipes will appear here once they share them.{{/if}}</p>
+        {{#if hasSearch}}<a class="btn btn-outline-success" href="{{base}}?view={{view}}">Clear search</a>{{else}}<a class="btn btn-success" href="/recipes">Explore recipes</a>{{/if}}
+      </section>
+    {{/if}}
+  {{/if}}
+
+  {{#unless canViewContent}}
+    <div class="recipe-empty text-center mt-5 p-4 p-md-5">
+      <h4>This account is private</h4>
+      <p class="text-muted">
+        Follow this user to see their recipes and activity.
+      </p>
+    </div>
+  {{/unless}}
+</main>

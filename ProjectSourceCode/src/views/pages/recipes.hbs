@@ -1,48 +1,40 @@
 <main class="container recipe-page py-4 py-md-5">
   <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
     <div>
-      <p class="recipe-eyebrow mb-2">PlateShare · Your recipe book</p>
-      <h1 class="fw-bold mb-2">{{title}}</h1>
-      <p class="text-secondary mb-0">{{#if isLibrary}}Keep your next meal close. Revisit the dishes you have rated.{{else}}Find a dish, check its nutrition, and save it for later.{{/if}}</p>
+      <p class="recipe-eyebrow mb-2">{{#if isLibrary}}A little collection of good taste{{else}}Discover · Cook · Share{{/if}}</p>
+      <h1 class="fw-bold mb-2">{{#if isLibrary}}My Recipes{{else}}Your next great bite{{/if}}</h1>
+      {{#unless isLibrary}}<p class="text-secondary mb-0">Something worth making. Something worth keeping.</p>{{/unless}}
     </div>
     {{#if isLibrary}}<a class="btn btn-outline-success" href="/recipes">Browse recipes</a>{{/if}}
   </div>
 
   {{#if isLibrary}}
+    <div class="profile-identity library-identity mb-4">
+      <a href="/profile" class="profile-avatar" aria-label="Your profile">{{userInitial}}</a>
+      <div><h2 class="h4 mb-1">{{user.username}}’s Recipe Book</h2><p class="text-secondary mb-0">Your favorites, and the dishes you’ll make next.</p></div>
+    </div>
     <div class="recipe-stats mb-4" aria-label="Your recipe collection">
-      <div><strong>{{stats.saved}}</strong><span>Saved recipes</span></div>
       <div><strong>{{stats.rated}}</strong><span>Recipes rated</span></div>
+      <div><strong>{{stats.saved}}</strong><span>Want to try</span></div>
+      <div><strong>{{stats.cuisines}}</strong><span>Cuisines tried</span></div>
     </div>
     <nav class="recipe-tabs mb-4" aria-label="Recipe collections">
-      <a href="{{savedUrl}}" {{#if isSaved}}class="active" aria-current="page"{{/if}}>Saved · {{stats.saved}}</a>
       <a href="{{ratedUrl}}" {{#if isRated}}class="active" aria-current="page"{{/if}}>Rated · {{stats.rated}}</a>
+      <a href="{{savedUrl}}" {{#if isSaved}}class="active" aria-current="page"{{/if}}>Saved · {{stats.saved}}</a>
     </nav>
   {{/if}}
 
-  <form method="get" action="{{base}}" class="row g-3 align-items-end mb-4" role="search">
-    {{#if isLibrary}}<input type="hidden" name="view" value="{{view}}">{{/if}}
-    <div class="col-12 col-md-6">
-      <label class="form-label" for="recipe-search">Search by recipe or cuisine</label>
-      <input class="form-control" type="search" id="recipe-search" name="q" value="{{q}}" maxlength="100" placeholder="Try pasta or Italian">
-    </div>
-    <div class="col-8 col-md-4">
-      <label class="form-label" for="recipe-sort">Sort by</label>
-      <select class="form-select" id="recipe-sort" name="sort">
-        <option value="recent" {{#if recentSort}}selected{{/if}}>Most recent</option>
-        <option value="title" {{#if titleSort}}selected{{/if}}>Recipe name</option>
-        <option value="rating" {{#if ratingSort}}selected{{/if}}>My highest rating</option>
-      </select>
-    </div>
-    <div class="col-4 col-md-2"><button class="btn btn-success w-100" type="submit">Apply</button></div>
-  </form>
+  {{> recipe-filters}}
 
   <p class="small text-secondary">{{total}} recipes{{#if hasSearch}} matching “{{q}}”{{/if}}{{#if isRated}} · Your ratings out of 5{{/if}}</p>
   {{#if recipes.length}}
-    <div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-4">
-      {{#each recipes}}
-        <div class="col">{{> recipe-card recipe=this csrfToken=@root.csrfToken returnTo=@root.returnTo}}</div>
-      {{/each}}
-    </div>
+    {{#if isRated}}
+      <div class="recipe-ranking">{{#each recipes}}{{> recipe-row recipe=this}}{{/each}}</div>
+    {{else}}
+      <div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-4">
+        {{#each recipes}}<div class="col">{{> recipe-card recipe=this csrfToken=@root.csrfToken returnTo=@root.returnTo}}</div>{{/each}}
+      </div>
+    {{/if}}
     {{> recipe-pagination}}
   {{else}}
     <section class="recipe-empty text-center p-4 p-md-5">
@@ -59,5 +51,15 @@
         <p class="text-secondary mb-0">Recipes will appear here once they have been added to PlateShare.</p>
       {{/if}}
     </section>
+  {{/if}}
+  {{#if isSaved}}
+    <details class="recipe-editor mt-4">
+      <summary>Manage unavailable bookmarks</summary>
+      <p class="small text-secondary mt-3">A saved recipe may become unavailable when its author makes their account private. You can remove bookmarks you no longer have access to. Your available saves and ratings will stay.</p>
+      <form action="/my-recipes/clear-unavailable" method="post">
+        <input type="hidden" name="_csrf" value="{{csrfToken}}">
+        <button class="btn btn-outline-success btn-sm" type="submit">Remove unavailable bookmarks</button>
+      </form>
+    </details>
   {{/if}}
 </main>

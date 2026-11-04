@@ -1,0 +1,16 @@
+  <form method="get" action="{{base}}" class="row g-3 align-items-end mb-4" role="search">
+    <input type="hidden" name="view" value="{{view}}">
+    <div class="col-12 col-md-6">
+      <label class="form-label" for="recipe-search">Search by recipe or cuisine</label>
+      <input class="form-control" type="search" id="recipe-search" name="q" value="{{q}}" maxlength="100" placeholder="Try pasta or Italian">
+    </div>
+    <div class="col-8 col-md-4">
+      <label class="form-label" for="recipe-sort">Sort by</label>
+      <select class="form-select" id="recipe-sort" name="sort">
+        <option value="recent" {{#if recentSort}}selected{{/if}}>Most recent</option>
+        <option value="title" {{#if titleSort}}selected{{/if}}>Recipe name</option>
+        <option value="rating" {{#if ratingSort}}selected{{/if}}>Highest rating</option>
+      </select>
+    </div>
+    <div class="col-4 col-md-2"><button class="btn btn-success w-100" type="submit">Apply</button></div>
+  </form>

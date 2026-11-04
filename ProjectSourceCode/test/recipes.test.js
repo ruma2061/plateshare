@@ -181,3 +181,55 @@ test('empty and failed database reads produce helpful pages without leaking SQL'
     await db.none('ALTER TABLE unavailable_saves RENAME TO saved_recipes');
   }
 });
+
+test('private authors are hidden in catalogs, collections, counts and direct recipe actions until followed', async () => {
+  await db.none('UPDATE users SET is_private = TRUE WHERE user_id = 2');
+  await db.none('INSERT INTO saved_recipes (user_id, recipe_id) VALUES (1, 2)');
+  await db.none('INSERT INTO ratings (user_id, recipe_id, rating) VALUES (1, 2, 5)');
+  await db.none('INSERT INTO follow_requests (requester_id, recipient_id) VALUES (1, 2)');
+  const alice = await site.client(1);
+  for (const url of ['/recipes', '/my-recipes', '/my-recipes?view=rated']) {
+    const html = await (await alice.request(url)).text();
+    assert.doesNotMatch(html, /Lemon pasta/);
+    if (url.startsWith('/my-recipes')) {
+      assert.match(html, /Saved · 0/);
+      assert.match(html, /Rated · 0/);
+    }
+  }
+  assert.equal((await alice.request('/recipes/2')).status, 404);
+  for (const action of ['save', 'nutrition']) {
+    assert.equal((await alice.request(`/recipes/2/${action}`, { _csrf: alice.token })).status, 404);
+  }
+  const bob = await site.client(2);
+  assert.equal((await bob.request('/recipes/2')).status, 200);
+  await db.none('INSERT INTO follows (follower_id, following_id) VALUES (1, 2)');
+  assert.match(await (await alice.request('/recipes/2')).text(), /Lemon pasta/);
+  assert.match(await (await alice.request('/my-recipes')).text(), /Lemon pasta/);
+});
+
+test('a bookmark can still be removed after its author makes the recipe private', async () => {
+  await db.none('UPDATE users SET is_private = TRUE WHERE user_id = 2');
+  await db.none('INSERT INTO saved_recipes (user_id, recipe_id) VALUES (1, 2), (2, 2)');
+  const alice = await site.client(1);
+  const response = await alice.request('/recipes/2/unsave', { _csrf: alice.token, returnTo: '/my-recipes' });
+  assert.equal(response.status, 303);
+  assert.deepEqual(await db.any('SELECT user_id FROM saved_recipes WHERE recipe_id = 2'), [{ user_id: 2 }]);
+});
+
+test('the library offers cleanup of unavailable bookmarks without exposing their private details or deleting ratings', async () => {
+  await db.none('UPDATE users SET is_private = TRUE WHERE user_id = 2');
+  await db.none('INSERT INTO saved_recipes (user_id, recipe_id) VALUES (1, 1), (1, 2), (2, 2)');
+  await db.none('INSERT INTO ratings (user_id, recipe_id, rating) VALUES (1, 2, 5)');
+  const alice = await site.client(1);
+  const html = await (await alice.request('/my-recipes')).text();
+  assert.ok(html.includes('action="/my-recipes/clear-unavailable"'), 'Unavailable bookmarks need a reachable cleanup form');
+  assert.doesNotMatch(html, /Lemon pasta/);
+  assert.equal((await alice.request('/my-recipes/clear-unavailable', {})).status, 403);
+  const response = await alice.request('/my-recipes/clear-unavailable', { _csrf: alice.token, user_id: 2 });
+  assert.equal(response.status, 303);
+  assert.deepEqual(await db.any('SELECT user_id, recipe_id FROM saved_recipes ORDER BY user_id, recipe_id'), [
+    { user_id: 1, recipe_id: 1 }, { user_id: 2, recipe_id: 2 },
+  ]);
+  assert.equal((await db.one('SELECT rating FROM ratings WHERE user_id = 1 AND recipe_id = 2')).rating, 5);
+  assert.equal((await alice.request('/my-recipes/clear-unavailable', { _csrf: alice.token })).status, 303);
+});

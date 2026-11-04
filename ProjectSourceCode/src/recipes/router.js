@@ -1,7 +1,9 @@
 const express = require('express');
-const { randomBytes } = require('node:crypto');
 const auth = require('../middleware/auth');
-const { parseNutrition, nutritionForDisplay } = require('./nutrition');
+const { prepareCsrf, verifyCsrf } = require('../middleware/csrf');
+const { parseNutrition } = require('./nutrition');
+const { presentRecipe } = require('./presentation');
+const { recipeVisibility } = require('./visibility');
 
 const PAGE_SIZE = 12;
 const ORIGIN = 'http://plateshare.local';
@@ -13,20 +15,11 @@ const selectRecipe = `SELECT r.*, u.username AS author,
   LEFT JOIN ratings my_rating ON my_rating.recipe_id = r.recipe_id AND my_rating.user_id = $1
   LEFT JOIN saved_recipes saved ON saved.recipe_id = r.recipe_id AND saved.user_id = $1`;
 
-function presentRecipe(recipe) {
-  let imageUrl = null;
-  try {
-    const url = new URL(recipe.image_url);
-    if (['http:', 'https:'].includes(url.protocol)) imageUrl = url.href;
-  } catch { /* Recipes may have no photo. */ }
-  return { ...recipe, image_url: imageUrl, author: recipe.author || 'PlateShare', ...nutritionForDisplay(recipe) };
-}
-
 function localReturnTo(value, fallback) {
   if (typeof value !== 'string' || !value.startsWith('/') || value.startsWith('//')) return fallback;
   try {
     const url = new URL(value, ORIGIN);
-    if (url.origin === ORIGIN && /^\/(my-recipes|recipes(?:\/[1-9]\d*)?)$/.test(url.pathname)) {
+    if (url.origin === ORIGIN && /^\/(my-recipes|recipes(?:\/[1-9]\d*)?|profile\/[A-Za-z0-9_]{3,20})$/.test(url.pathname)) {
       return url.pathname + url.search;
     }
   } catch { /* Use the recipe detail page for invalid return targets. */ }
@@ -36,20 +29,14 @@ function localReturnTo(value, fallback) {
 function createRecipeRouter(db) {
   const router = express.Router();
   // Scope authentication/CSRF setup to these features; login routes remain public.
-  router.use(['/recipes', '/my-recipes'], auth, (req, res, next) => {
-    if (!req.session.recipeCsrfToken) req.session.recipeCsrfToken = randomBytes(32).toString('hex');
-    res.locals.csrfToken = req.session.recipeCsrfToken;
+  router.use(['/recipes', '/my-recipes'], auth, prepareCsrf, (req, res, next) => {
     res.locals.recipeStyles = true;
+    res.locals.libraryActive = req.originalUrl.split('?')[0].startsWith('/my-recipes');
+    res.locals.recipesActive = !res.locals.libraryActive;
     next();
   });
 
   const asyncRoute = handler => (req, res, next) => Promise.resolve(handler(req, res, next)).catch(next);
-  const verifyCsrf = (req, res, next) => {
-    if (typeof req.body._csrf !== 'string' || req.body._csrf !== req.session.recipeCsrfToken) {
-      return res.status(403).render('pages/recipe-error', { message: 'This form expired. Reload the page and try again.' });
-    }
-    next();
-  };
 
   router.param('recipeId', (req, res, next, value) => {
     if (!/^[1-9]\d*$/.test(value) || Number(value) > 2147483647) {
@@ -60,7 +47,7 @@ function createRecipeRouter(db) {
   });
 
   const loadRecipe = asyncRoute(async (req, res, next) => {
-    const row = await db.oneOrNone(`${selectRecipe} WHERE r.recipe_id = $2`, [req.session.user.user_id, req.recipeId]);
+    const row = await db.oneOrNone(`${selectRecipe} WHERE r.recipe_id = $2 AND ${recipeVisibility}`, [req.session.user.user_id, req.recipeId]);
     if (!row) return res.status(404).render('pages/recipe-error', { message: 'Recipe not found.' });
     req.recipe = presentRecipe(row);
     next();
@@ -88,7 +75,7 @@ function createRecipeRouter(db) {
     // Escape LIKE wildcards so a search for '%' or '_' means that literal text.
     const search = `%${q.replace(/[\\%_]/g, '\\$&')}%`;
     const collection = isLibrary ? (view === 'rated' ? 'AND my_rating.rating_id IS NOT NULL' : 'AND saved.recipe_id IS NOT NULL') : '';
-    const filter = `WHERE (r.title ILIKE $2 OR COALESCE(r.cuisine, '') ILIKE $2) ${collection}`;
+    const filter = `WHERE ${recipeVisibility} AND (r.title ILIKE $2 OR COALESCE(r.cuisine, '') ILIKE $2) ${collection}`;
     const count = await db.one(`SELECT COUNT(*)::int AS total FROM (${selectRecipe} ${filter}) matching`, [userId, search]);
     const pageCount = Math.max(1, Math.ceil(count.total / PAGE_SIZE));
     const page = Math.min(requestedPage, pageCount);
@@ -100,8 +87,10 @@ function createRecipeRouter(db) {
     const rows = await db.any(`${selectRecipe} ${filter} ORDER BY ${ordering} LIMIT $3 OFFSET $4`,
       [userId, search, PAGE_SIZE, (page - 1) * PAGE_SIZE]);
     const stats = isLibrary ? await db.one(`SELECT
-      (SELECT COUNT(*)::int FROM saved_recipes WHERE user_id = $1) AS saved,
-      (SELECT COUNT(*)::int FROM ratings WHERE user_id = $1) AS rated`, [userId]) : null;
+      COUNT(*) FILTER (WHERE is_saved)::int AS saved,
+      COUNT(user_rating)::int AS rated,
+      COUNT(DISTINCT NULLIF(BTRIM(cuisine), '')) FILTER (WHERE user_rating IS NOT NULL)::int AS cuisines
+      FROM (${selectRecipe} WHERE ${recipeVisibility}) visible`, [userId]) : null;
     const base = isLibrary ? '/my-recipes' : '/recipes';
     const link = (newPage, newView = view) => {
       const params = new URLSearchParams({ ...(isLibrary ? { view: newView } : {}), q, sort, page: String(newPage) });
@@ -110,7 +99,8 @@ function createRecipeRouter(db) {
     res.render('pages/recipes', {
       isLibrary, isRated: isLibrary && view === 'rated', isSaved: isLibrary && view === 'saved',
       title: isLibrary ? 'My Recipes' : 'Recipes',
-      recipes: rows.map(presentRecipe), stats, q, sort, view, base,
+      recipes: rows.map((row, index) => ({ ...presentRecipe(row), position: (page - 1) * PAGE_SIZE + index + 1 })), stats, q, sort, view, base,
+      userInitial: req.session.user.username.slice(0, 1).toUpperCase(),
       recentSort: sort === 'recent', titleSort: sort === 'title', ratingSort: sort === 'rating',
       hasSearch: Boolean(q), total: count.total, page, pageCount,
       previousUrl: page > 1 ? link(page - 1) : null,
@@ -122,6 +112,12 @@ function createRecipeRouter(db) {
 
   router.get('/recipes', listRecipes(false));
   router.get('/my-recipes', listRecipes(true));
+  router.post('/my-recipes/clear-unavailable', verifyCsrf, asyncRoute(async (req, res) => {
+    await db.none(`DELETE FROM saved_recipes saved USING recipes r LEFT JOIN users u ON u.user_id = r.user_id
+      WHERE saved.recipe_id = r.recipe_id AND saved.user_id = $1 AND NOT ${recipeVisibility}`,
+    [req.session.user.user_id]);
+    res.redirect(303, '/my-recipes');
+  }));
   router.get('/recipes/:recipeId', loadRecipe, asyncRoute((req, res) => renderDetail(req, res)));
 
   router.post('/recipes/:recipeId/save', verifyCsrf, loadRecipe, asyncRoute(async (req, res) => {
@@ -130,7 +126,11 @@ function createRecipeRouter(db) {
     res.redirect(303, localReturnTo(req.body.returnTo, `/recipes/${req.recipeId}`));
   }));
 
-  router.post('/recipes/:recipeId/unsave', verifyCsrf, loadRecipe, asyncRoute(async (req, res) => {
+  router.post('/recipes/:recipeId/unsave', verifyCsrf, asyncRoute(async (req, res) => {
+    // A user can remove their own bookmark even after losing access to a recipe.
+    // No hidden recipe data is loaded or rendered by this operation.
+    const exists = await db.oneOrNone('SELECT recipe_id FROM recipes WHERE recipe_id = $1', [req.recipeId]);
+    if (!exists) return res.status(404).render('pages/recipe-error', { message: 'Recipe not found.' });
     await db.none('DELETE FROM saved_recipes WHERE user_id = $1 AND recipe_id = $2', [req.session.user.user_id, req.recipeId]);
     res.redirect(303, localReturnTo(req.body.returnTo, `/recipes/${req.recipeId}`));
   }));
