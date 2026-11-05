@@ -18,7 +18,7 @@ const bcrypt = require('bcryptjs'); //  To hash passwords
 // <!-- Section 2 : Create Application -->
 // *****************************************************
 
-function createApp(db, { sessionSecret = process.env.SESSION_SECRET } = {}) {
+function createApp(db, { sessionSecret = process.env.SESSION_SECRET, mealDb } = {}) {
   const app = express();
   // create `ExpressHandlebars` instance and configure the layouts and partials dir.
   const hbs = handlebars.create({
@@ -107,7 +107,7 @@ function createApp(db, { sessionSecret = process.env.SESSION_SECRET } = {}) {
 
   app.use('/resources', express.static(path.join(__dirname, 'resources')));
   app.use('/vendor/bootstrap', express.static(path.join(__dirname, '../node_modules/bootstrap/dist')));
-  app.use(createRecipeRouter(db));
+  app.use(createRecipeRouter(db, mealDb ? { mealDb } : {}));
 
   /**
    * GET /profile

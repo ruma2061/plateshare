@@ -1,7 +1,7 @@
 const { createApp } = require('../../src/app');
 
-async function createSite(db) {
-  const app = createApp(db, { sessionSecret: 'test-only-session-secret' });
+async function createSite(db, appOptions = {}) {
+  const app = createApp(db, { sessionSecret: 'test-only-session-secret', ...appOptions });
   // Test-only login sets the same session shape as the production login route.
   app.post('/test-login/:id', async (req, res) => {
     req.session.user = await db.one('SELECT user_id, username FROM users WHERE user_id = $1', [Number(req.params.id)]);

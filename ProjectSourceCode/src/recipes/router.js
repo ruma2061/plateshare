@@ -6,6 +6,8 @@ const { presentRecipe } = require('./presentation');
 const { recipeVisibility } = require('./visibility');
 const { registerRatingRoutes } = require('./ratingRoutes');
 const { ratingForDisplay } = require('./rating');
+const { registerImportRoutes } = require('./importRoutes');
+const { createMealDbClient } = require('./mealdb');
 
 const PAGE_SIZE = 12;
 const ORIGIN = 'http://plateshare.local';
@@ -28,7 +30,7 @@ function localReturnTo(value, fallback) {
   return fallback;
 }
 
-function createRecipeRouter(db) {
+function createRecipeRouter(db, { mealDb = createMealDbClient() } = {}) {
   const router = express.Router();
   // Scope authentication/CSRF setup to these features; login routes remain public.
   router.use(['/recipes', '/my-recipes'], auth, prepareCsrf, (req, res, next) => {
@@ -121,6 +123,9 @@ function createRecipeRouter(db) {
     [req.session.user.user_id]);
     res.redirect(303, '/my-recipes');
   }));
+  // TheMealDB import (#9). Must come before /recipes/:recipeId so 'import' isn't read as an ID.
+  registerImportRoutes(router, { db, mealDb, asyncRoute, verifyCsrf });
+
   router.get('/recipes/:recipeId', loadRecipe, asyncRoute((req, res) => renderDetail(req, res)));
 
   router.post('/recipes/:recipeId/save', verifyCsrf, loadRecipe, asyncRoute(async (req, res) => {
