@@ -9,7 +9,7 @@
     <h2 class="h5"><a class="recipe-title-link" href="/recipes/{{recipe.recipe_id}}">{{recipe.title}}</a></h2>
     <p class="small text-secondary">By {{#if recipe.authorUrl}}<a class="recipe-author" href="{{recipe.authorUrl}}">{{recipe.author}}</a>{{else}}{{recipe.author}}{{/if}}{{#if recipe.hasTotalTime}} · {{recipe.totalMinutes}} min{{/if}}</p>
     {{#if recipe.description}}<p class="recipe-description">{{recipe.description}}</p>{{/if}}
-    <p class="small fw-semibold">{{#if recipe.user_rating}}Your rating: {{recipe.user_rating}} / 5{{else}}You have not rated this recipe{{/if}}</p>
+    <p class="small fw-semibold">{{#if recipe.user_score}}Your score: {{recipe.user_score}} / 10{{else if recipe.user_rating}}Your rating: {{recipe.user_rating}} / 5{{else}}You have not rated this recipe{{/if}}</p>
     <div class="mt-auto">
       {{> nutrition recipe=recipe}}
       <div class="d-flex flex-wrap gap-2 mt-3">

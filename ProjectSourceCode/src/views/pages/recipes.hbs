@@ -26,7 +26,7 @@
 
   {{> recipe-filters}}
 
-  <p class="small text-secondary">{{total}} recipes{{#if hasSearch}} matching “{{q}}”{{/if}}{{#if isRated}} · Your ratings out of 5{{/if}}</p>
+  <p class="small text-secondary">{{total}} recipes{{#if hasSearch}} matching “{{q}}”{{/if}}{{#if isRated}} · Your scores out of 10{{/if}}</p>
   {{#if recipes.length}}
     {{#if isRated}}
       <div class="recipe-ranking">{{#each recipes}}{{> recipe-row recipe=this}}{{/each}}</div>

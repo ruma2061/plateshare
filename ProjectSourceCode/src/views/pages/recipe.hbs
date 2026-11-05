@@ -8,8 +8,38 @@
     {{#if recipe.description}}<p>{{recipe.description}}</p>{{/if}}
     <div class="d-flex flex-wrap align-items-center gap-3 mb-4">
       {{> recipe-save recipe=recipe csrfToken=csrfToken returnTo=returnTo}}
-      <span class="small fw-semibold">{{#if recipe.user_rating}}Your rating: {{recipe.user_rating}} / 5{{else}}You have not rated this recipe{{/if}}</span>
     </div>
+
+    <section id="rating" class="recipe-rating mb-4" aria-labelledby="rating-title">
+      <div class="d-flex align-items-center gap-3 mb-3">
+        {{#if rating.hasScore}}
+          <span class="recipe-score" aria-hidden="true">{{rating.score}}<small>/ 10</small></span>
+        {{/if}}
+        <div>
+          <h2 id="rating-title" class="h5 mb-0">Your rating</h2>
+          <p class="small text-secondary mb-0">
+            {{#if rating.hasScore}}{{rating.sentiment.emoji}} {{rating.sentiment.label}} · {{rating.score}} / 10
+            {{else if rating.legacyStars}}{{rating.legacyStars}} / 5 (rate again to rank it)
+            {{else}}You have not rated this recipe{{/if}}
+          </p>
+        </div>
+      </div>
+      {{#if isOwner}}
+        <p class="small text-secondary mb-0">This is your recipe, so you can’t rate it.</p>
+      {{else}}
+        <form method="post" action="/recipes/{{recipe.recipe_id}}/rate" class="d-flex flex-wrap gap-2">
+          <input type="hidden" name="_csrf" value="{{csrfToken}}">
+          {{#each rating.options}}
+            <button type="submit" name="sentiment" value="{{value}}"
+                    class="btn btn-sm {{#if active}}btn-success{{else}}btn-outline-success{{/if}}"
+                    {{#if active}}aria-pressed="true"{{/if}}>
+              <span aria-hidden="true">{{emoji}}</span> {{label}}
+            </button>
+          {{/each}}
+        </form>
+        {{#if rating.hasScore}}<p class="small text-secondary mt-2 mb-0">Pick again to re-rank it.</p>{{/if}}
+      {{/if}}
+    </section>
 
     <nav class="recipe-section-links" aria-label="Recipe sections">
       <a href="#ingredients-title">Ingredients ↗</a><a href="#directions-title">Steps ↗</a><a href="#nutrition">Nutrition ↗</a>
@@ -53,5 +83,6 @@
         <p class="recipe-directions">{{recipe.directions}}</p>
       </section>
     </div>
+{{> recipe-comments}}
   </article>
 </main>

@@ -1,0 +1,32 @@
+<main class="container recipe-page py-4 py-md-5">
+  <a class="recipe-title-link" href="/recipes/{{recipe.recipe_id}}">{{> icon arrow=true}} Back to {{recipe.title}}</a>
+  <p class="recipe-eyebrow mt-4 mb-2">{{sentimentEmoji}} {{sentimentLabel}}</p>
+  <h1 class="h3 fw-bold">Which was better?</h1>
+  <p class="text-secondary">About {{questionsLeft}} more question{{#unless oneLeft}}s{{/unless}}.</p>
+
+  <div class="row g-3 mt-1">
+    {{#each choices}}
+      <div class="col-12 col-md-6">
+        <form method="post" action="/recipes/{{../recipe.recipe_id}}/rate/answer" class="h-100">
+          <input type="hidden" name="_csrf" value="{{../csrfToken}}">
+          <button type="submit" name="answer" value="{{answer}}" class="card recipe-card rate-choice w-100 h-100 p-0 text-start">
+            {{#if item.image_url}}
+              <img src="{{item.image_url}}" class="card-img-top recipe-card-image" alt="" referrerpolicy="no-referrer">
+            {{else}}
+              <div class="recipe-photo-placeholder" aria-hidden="true">{{> icon leaf=true}}</div>
+            {{/if}}
+            <span class="card-body d-block">
+              <span class="recipe-eyebrow d-block mb-1">{{tag}}</span>
+              <span class="h5 d-block mb-0">{{item.title}}</span>
+            </span>
+          </button>
+        </form>
+      </div>
+    {{/each}}
+  </div>
+
+  <form method="post" action="/recipes/{{recipe.recipe_id}}/rate/answer" class="mt-3">
+    <input type="hidden" name="_csrf" value="{{csrfToken}}">
+    <button class="btn btn-link px-0" type="submit" name="answer" value="skip">Skip, just place it in the middle</button>
+  </form>
+</main>

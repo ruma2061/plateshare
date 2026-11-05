@@ -4,11 +4,14 @@ const { prepareCsrf, verifyCsrf } = require('../middleware/csrf');
 const { parseNutrition } = require('./nutrition');
 const { presentRecipe } = require('./presentation');
 const { recipeVisibility } = require('./visibility');
+const { registerRatingRoutes } = require('./ratingRoutes');
+const { ratingForDisplay } = require('./rating');
+const { loadComments, registerCommentRoutes } = require('./comments');
 
 const PAGE_SIZE = 12;
 const ORIGIN = 'http://plateshare.local';
 const selectRecipe = `SELECT r.*, u.username AS author,
-  my_rating.rating AS user_rating,
+  my_rating.rating AS user_rating, my_rating.score AS user_score, my_rating.sentiment AS user_sentiment,
   (saved.recipe_id IS NOT NULL) AS is_saved
   FROM recipes r
   LEFT JOIN users u ON u.user_id = r.user_id
@@ -59,8 +62,10 @@ function createRecipeRouter(db) {
       WHERE ri.recipe_id = $1 ORDER BY i.name`, [req.recipeId]);
     return res.render('pages/recipe', {
       recipe: req.recipe, ingredients,
+      ...await loadComments(db, req.recipeId, req.query),
       isOwner: req.recipe.user_id === req.session.user.user_id,
       nutritionInputs: req.recipe.nutrients,
+      rating: ratingForDisplay(req.recipe),
       returnTo: `/recipes/${req.recipeId}`, ...extra,
     });
   }
@@ -81,7 +86,7 @@ function createRecipeRouter(db) {
     const page = Math.min(requestedPage, pageCount);
     const recentColumn = isLibrary ? (view === 'rated' ? 'my_rating.created_at' : 'saved.saved_at') : 'r.created_at';
     const ordering = sort === 'title' ? 'LOWER(r.title), r.recipe_id'
-      : sort === 'rating' ? 'my_rating.rating DESC NULLS LAST, r.recipe_id DESC'
+      : sort === 'rating' ? 'COALESCE(my_rating.score, my_rating.rating * 2) DESC NULLS LAST, r.recipe_id DESC'
         : `${recentColumn} DESC, r.recipe_id DESC`;
     // Ordering fragments are allowlisted above; user text is always parameterized.
     const rows = await db.any(`${selectRecipe} ${filter} ORDER BY ${ordering} LIMIT $3 OFFSET $4`,
@@ -157,6 +162,11 @@ function createRecipeRouter(db) {
     if (!updated) return res.status(404).render('pages/recipe-error', { message: 'Recipe not found.' });
     res.redirect(303, `/recipes/${req.recipeId}#nutrition`);
   }));
+
+  registerCommentRoutes(router, { db, verifyCsrf, loadRecipe, asyncRoute, renderDetail });
+
+  // Rating + comparisons (#10)
+  registerRatingRoutes(router, { db, loadRecipe, asyncRoute, verifyCsrf });
 
   router.use((error, req, res, next) => {
     if (res.headersSent) return next(error);
