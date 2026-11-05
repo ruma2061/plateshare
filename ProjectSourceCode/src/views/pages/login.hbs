@@ -1,35 +1,38 @@
+<div class="container mt-3 mt-md-5">
+  <div class="row justify-content-center">
+    <div class="col-12 col-sm-10 col-md-7 col-lg-5">
+      <h2>Plateshare Login</h2>
 
-<div class="container mt-5">
-  <h2>Plateshare Login</h2>
+      {{> message}}
 
-  {{> message}}
+      <form action="/login" method="POST">
+        <div class="mb-3">
+          <label for="username" class="form-label">Username</label>
+          <input
+            type="text"
+            class="form-control"
+            id="username"
+            name="username"
+            required
+          />
+        </div>
 
-  <form action="/login" method="POST">
-    <div class="mb-3">
-      <label for="username" class="form-label">Username</label>
-      <input
-        type="text"
-        class="form-control"
-        id="username"
-        name="username"
-        required
-      />
+        <div class="mb-3">
+          <label for="password" class="form-label">Password</label>
+          <input
+            type="password"
+            class="form-control"
+            id="password"
+            name="password"
+            required
+          />
+        </div>
+
+        <button type="submit" class="btn btn-primary w-100">Login</button>
+      </form>
+      <p class="mt-3">
+        Don't have an account? <a href="/register">Register here</a>
+      </p>
     </div>
-
-    <div class="mb-3">
-      <label for="password" class="form-label">Password</label>
-      <input
-        type="password"
-        class="form-control"
-        id="password"
-        name="password"
-        required
-      />
-    </div>
-
-    <button type="submit" class="btn btn-primary">Login</button>
-  </form>
-  <p class="mt-3">
-    Don't have an account? <a href="/register">Register here</a>
-  </p>
+  </div>
 </div>
