@@ -8,6 +8,7 @@ const { registerRatingRoutes } = require('./ratingRoutes');
 const { ratingForDisplay } = require('./rating');
 const { registerImportRoutes } = require('./importRoutes');
 const { createMealDbClient } = require('./mealdb');
+const { loadComments, registerCommentRoutes } = require('./comments');
 
 const PAGE_SIZE = 12;
 const ORIGIN = 'http://plateshare.local';
@@ -63,6 +64,7 @@ function createRecipeRouter(db, { mealDb = createMealDbClient() } = {}) {
       WHERE ri.recipe_id = $1 ORDER BY i.name`, [req.recipeId]);
     return res.render('pages/recipe', {
       recipe: req.recipe, ingredients,
+      ...await loadComments(db, req.recipeId, req.query),
       isOwner: req.recipe.user_id === req.session.user.user_id,
       nutritionInputs: req.recipe.nutrients,
       rating: ratingForDisplay(req.recipe),
@@ -165,6 +167,8 @@ function createRecipeRouter(db, { mealDb = createMealDbClient() } = {}) {
     if (!updated) return res.status(404).render('pages/recipe-error', { message: 'Recipe not found.' });
     res.redirect(303, `/recipes/${req.recipeId}#nutrition`);
   }));
+
+  registerCommentRoutes(router, { db, verifyCsrf, loadRecipe, asyncRoute, renderDetail });
 
   // Rating + comparisons (#10)
   registerRatingRoutes(router, { db, loadRecipe, asyncRoute, verifyCsrf });
