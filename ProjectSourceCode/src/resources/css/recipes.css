@@ -124,3 +124,8 @@ a { text-underline-offset: .2em; }
 .recipe-rating { border: 1px solid var(--ps-soft); border-radius: 1rem; padding: 1rem 1.25rem; }
 .rate-choice { border-width: 2px; transition: border-color .15s, transform .15s; }
 .rate-choice:hover, .rate-choice:focus-visible { border-color: var(--ps-green); transform: translateY(-2px); }
+
+.recipe-comment-body {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}

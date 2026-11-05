@@ -132,3 +132,21 @@ the wireframe mapping and manual checks.
 
 ## Contributing
 Make your own branch, don't push to main. Open a PR and get someone to review it before merging.
+
+## Recipe comments (#17)
+
+Logged-in users can comment on recipes they can view, including official recipes,
+their own recipes, public recipes and recipes from private accounts they follow.
+Pending follow requests do not grant access. Comments show the author and UTC time,
+preserve line breaks, and display newest first with 50 comments per page.
+Comments must contain 1–2,000 Unicode characters after trimming whitespace.
+
+Fresh Docker databases automatically apply `zz_004_recipe_comments.sql`. For an
+existing database, run from `ProjectSourceCode` without deleting the database volume:
+
+```sh
+docker compose exec db sh -c 'psql -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" -f /docker-entrypoint-initdb.d/zz_004_recipe_comments.sql'
+```
+
+Earlier schema upgrades must already be applied. Run `npm test` from
+`ProjectSourceCode` to verify comments, privacy, CSRF, rendering and existing features.
