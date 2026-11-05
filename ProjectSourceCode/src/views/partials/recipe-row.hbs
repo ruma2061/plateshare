@@ -6,7 +6,15 @@
   <div class="recipe-row-content">
     <h2 class="h5 mb-1"><a class="recipe-title-link" href="/recipes/{{recipe.recipe_id}}">{{recipe.title}}</a></h2>
     <p class="small text-secondary mb-1">{{#if recipe.cuisine}}{{recipe.cuisine}} · {{/if}}By {{recipe.author}}</p>
-    {{#if profileRating}}<p class="small mb-0">{{ratingUsername}}’s rating: {{recipe.profile_rating}} / 5</p>{{else}}<p class="small mb-0">Your rating: {{recipe.user_rating}} / 5</p>{{/if}}
+    {{#if profileRating}}
+      <p class="small mb-0">{{ratingUsername}}’s {{#if recipe.profile_score}}score: {{recipe.profile_score}} / 10{{else}}rating: {{recipe.profile_rating}} / 5{{/if}}</p>
+    {{else}}
+      <p class="small mb-0">Your {{#if recipe.user_score}}score: {{recipe.user_score}} / 10{{else}}rating: {{recipe.user_rating}} / 5{{/if}}</p>
+    {{/if}}
   </div>
-  <span class="recipe-score" aria-hidden="true">{{#if profileRating}}{{recipe.profile_rating}}{{else}}{{recipe.user_rating}}{{/if}}<small>/ 5</small></span>
+  {{#if profileRating}}
+    <span class="recipe-score" aria-hidden="true">{{#if recipe.profile_score}}{{recipe.profile_score}}<small>/ 10</small>{{else}}{{recipe.profile_rating}}<small>/ 5</small>{{/if}}</span>
+  {{else}}
+    <span class="recipe-score" aria-hidden="true">{{#if recipe.user_score}}{{recipe.user_score}}<small>/ 10</small>{{else}}{{recipe.user_rating}}<small>/ 5</small>{{/if}}</span>
+  {{/if}}
 </article>

@@ -124,7 +124,7 @@
       <a href="{{ratedUrl}}" {{#if isRated}}class="active" aria-current="page"{{/if}}>Ratings · {{stats.rated}}</a>
     </nav>
     {{> recipe-filters}}
-    <p class="small text-secondary">{{total}} recipes{{#if hasSearch}} matching “{{q}}”{{/if}}{{#if isRated}} · {{profileUser.username}}’s ratings out of 5{{/if}}</p>
+    <p class="small text-secondary">{{total}} recipes{{#if hasSearch}} matching “{{q}}”{{/if}}{{#if isRated}} · {{profileUser.username}}’s scores out of 10{{/if}}</p>
     {{#if recipes.length}}
       {{#if isRated}}
         <div class="recipe-ranking">

@@ -11,7 +11,8 @@ async function loadProfileContent(db, { profileUser, viewerId, query }) {
   const requestedPage = typeof query.page === 'string' && /^\d{1,7}$/.test(query.page)
     ? Math.max(1, Number(query.page)) : 1;
   const select = `SELECT r.*, u.username AS author, my_rating.rating AS user_rating,
-    profile_rating.rating AS profile_rating, profile_rating.created_at AS rated_at,
+    my_rating.score AS user_score,
+    profile_rating.rating AS profile_rating, profile_rating.score AS profile_score, profile_rating.created_at AS rated_at,
     (saved.recipe_id IS NOT NULL) AS is_saved
     FROM recipes r
     LEFT JOIN users u ON u.user_id = r.user_id
@@ -32,7 +33,7 @@ async function loadProfileContent(db, { profileUser, viewerId, query }) {
   const pageCount = Math.max(1, Math.ceil(count.total / PAGE_SIZE));
   const page = Math.min(requestedPage, pageCount);
   const ordering = sort === 'title' ? 'LOWER(r.title), r.recipe_id'
-    : sort === 'rating' ? 'profile_rating.rating DESC NULLS LAST, r.recipe_id DESC'
+    : sort === 'rating' ? 'COALESCE(profile_rating.score, profile_rating.rating * 2) DESC NULLS LAST, r.recipe_id DESC'
       : `${view === 'rated' ? 'profile_rating.created_at' : 'r.created_at'} DESC, r.recipe_id DESC`;
   const rows = await db.any(`${select} ${filter} ORDER BY ${ordering} LIMIT $4 OFFSET $5`,
     [viewerId, profileUser.user_id, search, PAGE_SIZE, (page - 1) * PAGE_SIZE]);
