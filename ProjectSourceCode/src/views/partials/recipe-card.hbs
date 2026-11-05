@@ -1,0 +1,21 @@
+<article class="card recipe-card h-100">
+  {{#if recipe.image_url}}
+    <a href="/recipes/{{recipe.recipe_id}}" tabindex="-1" aria-hidden="true"><img src="{{recipe.image_url}}" class="card-img-top recipe-card-image" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+  {{else}}
+    <div class="recipe-photo-placeholder" aria-hidden="true">{{> icon leaf=true}}<span>From someone’s kitchen</span></div>
+  {{/if}}
+  <div class="card-body d-flex flex-column">
+    <p class="recipe-eyebrow mb-2">{{#if recipe.cuisine}}{{recipe.cuisine}}{{else}}From the community{{/if}}</p>
+    <h2 class="h5"><a class="recipe-title-link" href="/recipes/{{recipe.recipe_id}}">{{recipe.title}}</a></h2>
+    <p class="small text-secondary">By {{#if recipe.authorUrl}}<a class="recipe-author" href="{{recipe.authorUrl}}">{{recipe.author}}</a>{{else}}{{recipe.author}}{{/if}}{{#if recipe.hasTotalTime}} · {{recipe.totalMinutes}} min{{/if}}</p>
+    {{#if recipe.description}}<p class="recipe-description">{{recipe.description}}</p>{{/if}}
+    <p class="small fw-semibold">{{#if recipe.user_score}}Your score: {{recipe.user_score}} / 10{{else if recipe.user_rating}}Your rating: {{recipe.user_rating}} / 5{{else}}You have not rated this recipe{{/if}}</p>
+    <div class="mt-auto">
+      {{> nutrition recipe=recipe}}
+      <div class="d-flex flex-wrap gap-2 mt-3">
+        <a class="btn btn-outline-success btn-sm" href="/recipes/{{recipe.recipe_id}}">View recipe</a>
+        {{> recipe-save recipe=recipe csrfToken=csrfToken returnTo=returnTo}}
+      </div>
+    </div>
+  </div>
+</article>

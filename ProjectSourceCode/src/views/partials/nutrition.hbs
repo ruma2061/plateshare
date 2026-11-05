@@ -1,0 +1,12 @@
+<div class="recipe-nutrition">
+  <p class="small fw-semibold mb-2">Per serving</p>
+  {{#if recipe.hasNutrition}}
+    <dl class="nutrition-grid mb-0">
+      {{#each recipe.nutrients}}
+        <div><dt>{{label}}</dt><dd>{{display}}</dd></div>
+      {{/each}}
+    </dl>
+  {{else}}
+    <p class="small text-secondary mb-0">Nutrition has not been provided.</p>
+  {{/if}}
+</div>

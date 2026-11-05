@@ -1,0 +1,87 @@
+<main class="container recipe-page recipe-detail py-4 py-md-5">
+  <a class="recipe-title-link" href="/recipes">{{> icon arrow=true}} All recipes</a>
+  <article class="mt-4">
+    {{#if recipe.image_url}}<img class="recipe-hero mb-4" src="{{recipe.image_url}}" alt="{{recipe.title}}" referrerpolicy="no-referrer">{{/if}}
+    <p class="recipe-eyebrow mb-2">{{#if recipe.cuisine}}{{recipe.cuisine}}{{else}}From the community{{/if}}</p>
+    <h1 class="fw-bold">{{recipe.title}}</h1>
+    <p class="text-secondary">By {{#if recipe.authorUrl}}<a class="recipe-author" href="{{recipe.authorUrl}}">{{recipe.author}}</a>{{else}}{{recipe.author}}{{/if}}{{#if recipe.hasTotalTime}} · {{recipe.totalMinutes}} min{{/if}}{{#if recipe.servings}} · Serves {{recipe.servings}}{{/if}}</p>
+    {{#if recipe.description}}<p>{{recipe.description}}</p>{{/if}}
+    <div class="d-flex flex-wrap align-items-center gap-3 mb-4">
+      {{> recipe-save recipe=recipe csrfToken=csrfToken returnTo=returnTo}}
+    </div>
+
+    <section id="rating" class="recipe-rating mb-4" aria-labelledby="rating-title">
+      <div class="d-flex align-items-center gap-3 mb-3">
+        {{#if rating.hasScore}}
+          <span class="recipe-score" aria-hidden="true">{{rating.score}}<small>/ 10</small></span>
+        {{/if}}
+        <div>
+          <h2 id="rating-title" class="h5 mb-0">Your rating</h2>
+          <p class="small text-secondary mb-0">
+            {{#if rating.hasScore}}{{rating.sentiment.emoji}} {{rating.sentiment.label}} · {{rating.score}} / 10
+            {{else if rating.legacyStars}}{{rating.legacyStars}} / 5 (rate again to rank it)
+            {{else}}You have not rated this recipe{{/if}}
+          </p>
+        </div>
+      </div>
+      {{#if isOwner}}
+        <p class="small text-secondary mb-0">This is your recipe, so you can’t rate it.</p>
+      {{else}}
+        <form method="post" action="/recipes/{{recipe.recipe_id}}/rate" class="d-flex flex-wrap gap-2">
+          <input type="hidden" name="_csrf" value="{{csrfToken}}">
+          {{#each rating.options}}
+            <button type="submit" name="sentiment" value="{{value}}"
+                    class="btn btn-sm {{#if active}}btn-success{{else}}btn-outline-success{{/if}}"
+                    {{#if active}}aria-pressed="true"{{/if}}>
+              <span aria-hidden="true">{{emoji}}</span> {{label}}
+            </button>
+          {{/each}}
+        </form>
+        {{#if rating.hasScore}}<p class="small text-secondary mt-2 mb-0">Pick again to re-rank it.</p>{{/if}}
+      {{/if}}
+    </section>
+
+    <nav class="recipe-section-links" aria-label="Recipe sections">
+      <a href="#ingredients-title">Ingredients ↗</a><a href="#directions-title">Steps ↗</a><a href="#nutrition">Nutrition ↗</a>
+    </nav>
+    <section id="nutrition" class="mb-4" aria-labelledby="nutrition-title">
+      <h2 id="nutrition-title" class="h4">Nutrition</h2>
+      {{> nutrition recipe=recipe}}
+      <p class="small text-secondary mt-2">Values are provided with the recipe. Missing values are not counted as zero.</p>
+      {{#if isOwner}}
+        <details class="recipe-editor mt-3" {{#if nutritionError}}open{{/if}}>
+          <summary class="fw-semibold">Edit nutrition</summary>
+          <p class="small text-secondary mt-3" id="nutrition-help">Enter amounts for one serving. Leave any unknown measurement blank.</p>
+          {{#if nutritionError}}<div class="alert alert-danger" role="alert">{{nutritionError}}</div>{{/if}}
+          <form method="post" action="/recipes/{{recipe.recipe_id}}/nutrition">
+            <input type="hidden" name="_csrf" value="{{csrfToken}}">
+            <div class="row g-3">
+              {{#each nutritionInputs}}
+                <div class="col-12 col-sm-6">
+                  <label for="nutrition-{{name}}" class="form-label">{{label}} ({{unit}})</label>
+                  <input class="form-control" id="nutrition-{{name}}" name="{{name}}" type="number" min="0" max="99999999.99" step="0.01" value="{{value}}" inputmode="decimal" aria-describedby="nutrition-help">
+                </div>
+              {{/each}}
+            </div>
+            <button type="submit" class="btn btn-success mt-3">Save nutrition</button>
+          </form>
+        </details>
+      {{/if}}
+    </section>
+
+    <div class="row g-4">
+      <section class="col-12 col-md-5" aria-labelledby="ingredients-title">
+        <h2 id="ingredients-title" class="h4">Ingredients</h2>
+        {{#if ingredients.length}}
+          <ul class="ps-3">
+            {{#each ingredients}}<li class="mb-2">{{quantity}} {{unit}} {{name}}{{#if notes}} — {{notes}}{{/if}}</li>{{/each}}
+          </ul>
+        {{else}}<p class="text-secondary">Ingredients have not been listed yet.</p>{{/if}}
+      </section>
+      <section class="col-12 col-md-7" aria-labelledby="directions-title">
+        <h2 id="directions-title" class="h4">Directions</h2>
+        <p class="recipe-directions">{{recipe.directions}}</p>
+      </section>
+    </div>
+  </article>
+</main>

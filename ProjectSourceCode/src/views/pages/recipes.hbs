@@ -1,0 +1,65 @@
+<main class="container recipe-page py-4 py-md-5">
+  <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+    <div>
+      <p class="recipe-eyebrow mb-2">{{#if isLibrary}}A little collection of good taste{{else}}Discover · Cook · Share{{/if}}</p>
+      <h1 class="fw-bold mb-2">{{#if isLibrary}}My Recipes{{else}}Your next great bite{{/if}}</h1>
+      {{#unless isLibrary}}<p class="text-secondary mb-0">Something worth making. Something worth keeping.</p>{{/unless}}
+    </div>
+    {{#if isLibrary}}<a class="btn btn-outline-success" href="/recipes">Browse recipes</a>{{/if}}
+  </div>
+
+  {{#if isLibrary}}
+    <div class="profile-identity library-identity mb-4">
+      <a href="/profile" class="profile-avatar" aria-label="Your profile">{{userInitial}}</a>
+      <div><h2 class="h4 mb-1">{{user.username}}’s Recipe Book</h2><p class="text-secondary mb-0">Your favorites, and the dishes you’ll make next.</p></div>
+    </div>
+    <div class="recipe-stats mb-4" aria-label="Your recipe collection">
+      <div><strong>{{stats.rated}}</strong><span>Recipes rated</span></div>
+      <div><strong>{{stats.saved}}</strong><span>Want to try</span></div>
+      <div><strong>{{stats.cuisines}}</strong><span>Cuisines tried</span></div>
+    </div>
+    <nav class="recipe-tabs mb-4" aria-label="Recipe collections">
+      <a href="{{ratedUrl}}" {{#if isRated}}class="active" aria-current="page"{{/if}}>Rated · {{stats.rated}}</a>
+      <a href="{{savedUrl}}" {{#if isSaved}}class="active" aria-current="page"{{/if}}>Saved · {{stats.saved}}</a>
+    </nav>
+  {{/if}}
+
+  {{> recipe-filters}}
+
+  <p class="small text-secondary">{{total}} recipes{{#if hasSearch}} matching “{{q}}”{{/if}}{{#if isRated}} · Your scores out of 10{{/if}}</p>
+  {{#if recipes.length}}
+    {{#if isRated}}
+      <div class="recipe-ranking">{{#each recipes}}{{> recipe-row recipe=this}}{{/each}}</div>
+    {{else}}
+      <div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-4">
+        {{#each recipes}}<div class="col">{{> recipe-card recipe=this csrfToken=@root.csrfToken returnTo=@root.returnTo}}</div>{{/each}}
+      </div>
+    {{/if}}
+    {{> recipe-pagination}}
+  {{else}}
+    <section class="recipe-empty text-center p-4 p-md-5">
+      {{#if hasSearch}}
+        <h2 class="h4">No matching recipes</h2>
+        <p class="text-secondary">Try another recipe name or cuisine.</p>
+        <a class="btn btn-outline-success" href="{{base}}{{#if isLibrary}}?view={{view}}{{/if}}">Clear search</a>
+      {{else if isLibrary}}
+        <h2 class="h4">{{#if isRated}}No rated recipes yet{{else}}No saved recipes yet{{/if}}</h2>
+        <p class="text-secondary">{{#if isRated}}Recipes you rate will appear here, even if you have not saved them.{{else}}Save a recipe to start your personal collection.{{/if}}</p>
+        <a class="btn btn-success" href="/recipes">Browse recipes</a>
+      {{else}}
+        <h2 class="h4">No recipes yet</h2>
+        <p class="text-secondary mb-0">Recipes will appear here once they have been added to PlateShare.</p>
+      {{/if}}
+    </section>
+  {{/if}}
+  {{#if isSaved}}
+    <details class="recipe-editor mt-4">
+      <summary>Manage unavailable bookmarks</summary>
+      <p class="small text-secondary mt-3">A saved recipe may become unavailable when its author makes their account private. You can remove bookmarks you no longer have access to. Your available saves and ratings will stay.</p>
+      <form action="/my-recipes/clear-unavailable" method="post">
+        <input type="hidden" name="_csrf" value="{{csrfToken}}">
+        <button class="btn btn-outline-success btn-sm" type="submit">Remove unavailable bookmarks</button>
+      </form>
+    </details>
+  {{/if}}
+</main>

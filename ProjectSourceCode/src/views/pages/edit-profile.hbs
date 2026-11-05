@@ -5,6 +5,7 @@
   <h5 class="mt-4">Account Privacy</h5>
 
   <form action="/profile/privacy" method="POST">
+        <input type="hidden" name="_csrf" value="{{@root.csrfToken}}">
 
     <div class="form-check mb-3">
       <input

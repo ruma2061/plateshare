@@ -19,6 +19,7 @@
 
             <form action="/follow/accept/{{this.user_id}}"
                   method="POST">
+        <input type="hidden" name="_csrf" value="{{@root.csrfToken}}">
               <button class="btn btn-primary btn-sm"
                       type="submit">
                 Accept
@@ -27,6 +28,7 @@
 
             <form action="/follow/decline/{{this.user_id}}"
                   method="POST">
+        <input type="hidden" name="_csrf" value="{{@root.csrfToken}}">
               <button class="btn btn-outline-danger btn-sm"
                       type="submit">
                 Decline
