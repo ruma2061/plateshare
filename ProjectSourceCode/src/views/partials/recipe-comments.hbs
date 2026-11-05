@@ -1,0 +1,31 @@
+<section id="comments" class="mt-5" aria-labelledby="comments-title">
+  <h2 id="comments-title" class="h4">Comments ({{commentCount}})</h2>
+  <form method="post" action="/recipes/{{recipe.recipe_id}}/comments" class="mt-3 mb-4">
+    <input type="hidden" name="_csrf" value="{{csrfToken}}">
+    <label for="comment-body" class="form-label">Add a comment</label>
+    <p id="comment-help" class="small text-secondary">Share what you thought or ask a question. Up to 2,000 characters.</p>
+    {{#if commentError}}<p id="comment-error" class="text-danger" role="alert">{{commentError}}</p>{{/if}}
+    <textarea id="comment-body" name="body" class="form-control" rows="3" required
+      aria-describedby="comment-help{{#if commentError}} comment-error{{/if}}"{{#if commentError}} aria-invalid="true"{{/if}}>{{commentBody}}</textarea>
+    <button type="submit" class="btn btn-success mt-2">Post comment</button>
+  </form>
+  
+  {{#if comments.length}}
+    <p class="small text-secondary">Newest comments first</p>
+    <ul class="list-unstyled">
+      {{#each comments}}
+        <li class="border-bottom py-3" id="comment-{{comment_id}}">
+          <div class="d-flex flex-wrap gap-2 align-items-baseline mb-2">
+            <a href="{{authorUrl}}" class="fw-semibold">{{username}}</a>
+            <time datetime="{{createdIso}}" class="small text-secondary">{{createdLabel}}</time>
+          </div>
+          <p class="recipe-comment-body mb-0">{{body}}</p>
+        </li>
+      {{/each}}
+    </ul>
+  {{else}}
+    <p class="text-secondary">No comments yet. Start the conversation.</p>
+  {{/if}}
+  {{#if newerCommentsUrl}}<a class="btn btn-outline-secondary me-2" href="{{newerCommentsUrl}}">Newer comments</a>{{/if}}
+  {{#if olderCommentsUrl}}<a class="btn btn-outline-secondary" href="{{olderCommentsUrl}}">Older comments</a>{{/if}}
+</section>
