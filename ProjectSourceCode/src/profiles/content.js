@@ -32,8 +32,9 @@ async function loadProfileContent(db, { profileUser, viewerId, query }) {
     [viewerId, profileUser.user_id, search]);
   const pageCount = Math.max(1, Math.ceil(count.total / PAGE_SIZE));
   const page = Math.min(requestedPage, pageCount);
+  const ratingColumn = view === 'rated' ? 'profile_rating' : 'my_rating';
   const ordering = sort === 'title' ? 'LOWER(r.title), r.recipe_id'
-    : sort === 'rating' ? 'COALESCE(profile_rating.score, profile_rating.rating * 2) DESC NULLS LAST, r.recipe_id DESC'
+    : sort === 'rating' ? `COALESCE(${ratingColumn}.score, ${ratingColumn}.rating * 2) DESC NULLS LAST, r.recipe_id DESC`
       : `${view === 'rated' ? 'profile_rating.created_at' : 'r.created_at'} DESC, r.recipe_id DESC`;
   const rows = await db.any(`${select} ${filter} ORDER BY ${ordering} LIMIT $4 OFFSET $5`,
     [viewerId, profileUser.user_id, search, PAGE_SIZE, (page - 1) * PAGE_SIZE]);

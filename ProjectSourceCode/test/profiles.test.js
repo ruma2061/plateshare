@@ -215,3 +215,11 @@ test('user search treats underscores, percent signs and backslashes literally', 
   assert.match(normal, /href="\/profile\/cook_one"/);
   assert.match(normal, /href="\/profile\/cookXone"/);
 });
+
+test('posted profile recipes sort by the viewer rating shown on their cards', async () => {
+  await db.none("INSERT INTO recipes (user_id, title, directions) VALUES (1, 'Alice toast', 'Toast')");
+  await db.none('INSERT INTO ratings (user_id, recipe_id, rating) VALUES (3, 1, 5), (3, 4, 1)');
+  const viewer = await site.client(3);
+  const html = await (await viewer.request('/profile/alice?sort=rating')).text();
+  assert.match(html, /Alice garden soup[\s\S]*Your rating: 5 \/ 5[\s\S]*Alice toast[\s\S]*Your rating: 1 \/ 5/);
+});
