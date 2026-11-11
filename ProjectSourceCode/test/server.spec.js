@@ -191,7 +191,7 @@ describe('POST /follow/:userId — Extra Credit', () => {
       expect(login).to.have.status(302);
 
       // Retrieve a CSRF token for the authenticated session.
-      const profilePage = await agent.get('/profile/edit');
+      const profilePage = await agent.get('/settings/profile');
 
       expect(profilePage).to.have.status(200);
 
