@@ -345,6 +345,7 @@ function createApp(db, { sessionSecret = process.env.SESSION_SECRET } = {}) {
       return res.status(400).send('Enter one search term.');
     }
     const query = (req.query.q || '').trim();
+    const search = `%${query.replace(/[\\%_]/g, '\\$&')}%`;
 
     try {
       const profiles = await db.any(
@@ -354,7 +355,7 @@ function createApp(db, { sessionSecret = process.env.SESSION_SECRET } = {}) {
            AND username ILIKE $2
          ORDER BY username
          LIMIT 20`,
-        [req.session.user.user_id, `%${query}%`]
+        [req.session.user.user_id, search]
       );
 
       return res.render('pages/discover', {

@@ -197,3 +197,21 @@ test('login rejects missing, repeated and structured credentials without a serve
   assert.equal((await guest.request('/login')).status, 200);
   assert.equal((await guest.request('/profile')).headers.get('location'), '/login');
 });
+
+test('user search treats underscores, percent signs and backslashes literally', async () => {
+  await db.none("INSERT INTO users (username, password_hash) VALUES ('cook_one', 'hash'), ('cookXone', 'hash')");
+  const viewer = await site.client(3);
+  const underscore = await (await viewer.request('/discover?q=cook_one')).text();
+  assert.match(underscore, /href="\/profile\/cook_one"/);
+  assert.doesNotMatch(underscore, /href="\/profile\/cookXone"/);
+  for (const q of ['%', '\\']) {
+    const response = await viewer.request(`/discover?q=${encodeURIComponent(q)}`);
+    assert.equal(response.status, 200);
+    const html = await response.text();
+    assert.match(html, /No users found/);
+    assert.doesNotMatch(html, /href="\/profile\/(?:alice|bob|cook_one|cookXone)"/);
+  }
+  const normal = await (await viewer.request('/discover?q=COOK')).text();
+  assert.match(normal, /href="\/profile\/cook_one"/);
+  assert.match(normal, /href="\/profile\/cookXone"/);
+});
