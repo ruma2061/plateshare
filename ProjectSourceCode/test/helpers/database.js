@@ -5,7 +5,11 @@ const pgp = require('pg-promise')();
 
 async function applySchema(engine) {
   const directory = path.join(__dirname, '../../src/init_data');
-  for (const file of (await readdir(directory)).filter(name => name.endsWith('.sql')).sort()) {
+  // Tests provide their own fixtures. The one-time recipe seed is not a schema
+  // migration and its explicit IDs can collide with existing user recipes.
+  const schemaFiles = (await readdir(directory))
+    .filter(name => name === 'create.sql' || /^zz_.*\.sql$/.test(name)).sort();
+  for (const file of schemaFiles) {
     await engine.exec(await readFile(path.join(directory, file), 'utf8'));
   }
 }
