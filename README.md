@@ -37,8 +37,9 @@ for migration in src/init_data/zz_*.sql; do
 done
 ```
 
-Both migrations are safe to rerun and preserve accounts, recipes and ratings.
-The second adds account privacy and follow tables to older installations.
+These migrations are safe to rerun and preserve accounts, recipes and ratings.
+They add nutrition and saved recipes, profile privacy, rating comparisons and
+recipe comments to older installations.
 Do not reset the Docker volume to apply it. Future schema changes need their own
 migrations; changing `create.sql` alone will not update an existing database.
 
@@ -74,8 +75,8 @@ recipe posting (#6), food API integration (#9), and Discover/feed work (#15/#16)
 remain independent features. The collection and profile immediately reflect
 rows they add to the existing `recipes` and `ratings` tables. The recipe catalog
 is `/recipes`; the existing `/discover` route remains the team's user search.
-A fresh database has no
-recipes, so it will show an empty state until recipes are posted or imported.
+A fresh database includes the official recipe catalog from `insert.sql`.
+Personal collections start empty until recipes are saved or rated.
 
 All new routes require login. The POST routes `/recipes/:recipeId/save`,
 `/recipes/:recipeId/unsave` and `/recipes/:recipeId/nutrition` use a session-bound
