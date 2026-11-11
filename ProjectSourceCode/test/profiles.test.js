@@ -179,3 +179,21 @@ test('repeated search and registration fields return 400 and the app keeps servi
   ])).status, 400);
   assert.equal((await guest.request('/login')).status, 200);
 });
+
+test('login rejects missing, repeated and structured credentials without a server error', async () => {
+  const guest = await site.client();
+  for (const body of [
+    { username: 'alice' }, { password: 'password123' },
+    { username: '', password: 'password123' }, { username: 'alice', password: '' },
+    [['username', 'alice'], ['password', 'first'], ['password', 'second']],
+    [['username', 'alice'], ['username', 'bob'], ['password', 'password123']],
+    { username: 'alice', 'password[value]': 'password123' },
+    { 'username[value]': 'alice', password: 'password123' },
+  ]) {
+    const response = await guest.request('/login', body);
+    assert.equal(response.status, 400);
+    assert.match(await response.text(), /username.*password/i);
+  }
+  assert.equal((await guest.request('/login')).status, 200);
+  assert.equal((await guest.request('/profile')).headers.get('location'), '/login');
+});
