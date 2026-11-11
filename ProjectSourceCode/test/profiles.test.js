@@ -24,7 +24,7 @@ test('own profile shows authored recipes, rating history, real counts and privat
   const response = await alice.request('/profile/alice');
   assert.equal(response.status, 200);
   const html = await response.text();
-  for (const text of ['Alice garden soup', 'Recipes · 1', 'Ratings · 1', 'Member since', '/profile/edit', '/my-recipes', '/follow/requests']) {
+  for (const text of ['Alice garden soup', 'Recipes · 1', 'Ratings · 1', 'Member since', '/settings/profile', '/my-recipes', '/follow/requests']) {
     assert.ok(html.includes(text), text);
   }
   assert.doesNotMatch(html, /secret-hash|password_hash/);
@@ -38,7 +38,7 @@ test('public profiles show only visible recipes and their ratings, with no bookm
   const carol = await site.client(3);
   const html = await (await carol.request('/profile/alice')).text();
   assert.ok(html.includes('Alice garden soup'));
-  assert.doesNotMatch(html, /Alice garden soup.*secret-hash|\/profile\/edit|Your saved recipes/);
+  assert.doesNotMatch(html, /Alice garden soup.*secret-hash|\/settings\/profile|Your saved recipes/);
   // Header navigation links to the viewer's own collection; profile tabs never expose another user's saves.
   assert.doesNotMatch(html, /view=saved|Saved ·/);
   const rated = await (await carol.request('/profile/alice?view=rated')).text();
@@ -132,7 +132,7 @@ test('privacy and social mutations require the current session token before chan
   assert.equal((await db.one('SELECT COUNT(*)::int AS count FROM follow_requests')).count, 1);
   assert.equal((await db.one('SELECT COUNT(*)::int AS count FROM follows')).count, 0);
   assert.equal((await alice.request('/recipes/2')).status, 404);
-  const settings = await (await bob.request('/profile/edit')).text();
+  const settings = await (await bob.request('/settings/profile')).text();
   assert.ok(settings.includes(`name="_csrf" value="${bob.token}"`));
   const requests = await (await bob.request('/follow/requests')).text();
   assert.ok(requests.includes(`name="_csrf" value="${bob.token}"`));
@@ -162,4 +162,20 @@ test('registration and login reach a working profile and save returns to that pr
   const library = await fetch(`${site.base}/my-recipes`, { headers: { cookie } });
   assert.match(await library.text(), /Alice garden soup/);
   assert.equal((await db.one("SELECT COUNT(*)::int AS count FROM saved_recipes s JOIN users u USING (user_id) WHERE u.username = 'newcook'")).count, 1);
+});
+
+test('edit is a viewable username and settings remain separate', async () => {
+  await db.none("UPDATE users SET username = 'edit' WHERE user_id = 1");
+  const viewer = await site.client(3);
+  assert.match(await (await viewer.request('/profile/edit')).text(), /Alice garden soup/);
+});
+
+test('repeated search and registration fields return 400 and the app keeps serving', async () => {
+  const viewer = await site.client(3);
+  assert.equal((await viewer.request('/discover?q=a&q=b')).status, 400);
+  const guest = await site.client();
+  assert.equal((await guest.request('/register', [
+    ['username', 'first'], ['username', 'second'], ['password', 'password123'],
+  ])).status, 400);
+  assert.equal((await guest.request('/login')).status, 200);
 });

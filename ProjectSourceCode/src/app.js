@@ -51,7 +51,7 @@ function createApp(db, { sessionSecret = process.env.SESSION_SECRET } = {}) {
   app.use((req, res, next) => {
     res.locals.user = req.session.user;
     res.locals.recipeStyles = true;
-    res.locals.profileActive = req.path.startsWith('/profile') || req.path.startsWith('/follow');
+    res.locals.profileActive = req.path === '/settings/profile' || req.path.startsWith('/profile') || req.path.startsWith('/follow');
     res.locals.discoverActive = req.path === '/discover';
     next();
   });
@@ -150,7 +150,7 @@ function createApp(db, { sessionSecret = process.env.SESSION_SECRET } = {}) {
     return result.allowed;
   }
 
-  app.get('/profile/edit', auth, async (req, res) => {
+  app.get('/settings/profile', auth, async (req, res) => {
     try {
       const profileUser = await db.one(
         `SELECT username, is_private
@@ -349,6 +349,9 @@ function createApp(db, { sessionSecret = process.env.SESSION_SECRET } = {}) {
   });
 
   app.get('/discover', auth, async (req, res) => {
+    if (req.query.q !== undefined && typeof req.query.q !== 'string') {
+      return res.status(400).send('Enter one search term.');
+    }
     const query = (req.query.q || '').trim();
 
     try {
@@ -380,7 +383,7 @@ function createApp(db, { sessionSecret = process.env.SESSION_SECRET } = {}) {
 
   app.post('/login', async (req, res) => {
     try {
-      const username = (req.body.username || '').trim();
+      const username = typeof req.body.username === 'string' ? req.body.username.trim() : '';
       const password = req.body.password;
       const user = await db.oneOrNone(
           'SELECT * FROM users WHERE username = $1',
@@ -418,8 +421,13 @@ function createApp(db, { sessionSecret = process.env.SESSION_SECRET } = {}) {
     }
   });
   app.post('/register', async (req, res) => {
-    const username = (req.body.username || '').trim();
-    const password = req.body.password || '';
+    const username = typeof req.body.username === 'string'
+      ? req.body.username.trim()
+      : '';
+
+    const password = typeof req.body.password === 'string'
+      ? req.body.password
+      : '';
 
     const error = validateRegistration({ username, password });
 

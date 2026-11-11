@@ -9,10 +9,15 @@ const db = pgp({
   password: process.env.POSTGRES_PASSWORD,
 });
 
-db.connect().then(connection => {
-  console.log('Database connection successful');
+async function start() {
+  const connection = await db.connect();
   connection.done();
-}).catch(error => console.error('Database connection failed:', error.message));
+  const port = Number(process.env.PORT || 3000);
+  createApp(db).listen(port, () => console.log(`Server is listening on port ${port}`));
+}
 
-const port = Number(process.env.PORT || 3000);
-createApp(db).listen(port, () => console.log(`Server is listening on port ${port}`));
+start().catch(error => {
+  console.error('Server startup failed:', error.message);
+  pgp.end();
+  process.exitCode = 1;
+});
