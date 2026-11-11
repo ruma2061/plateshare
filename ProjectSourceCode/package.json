@@ -15,9 +15,13 @@
     "scripts": {
         "prestart": "npm install",
         "start": "nodemon src/index.js",
-        "test": "node --test test/*.test.js"
+        "test": "mocha --timeout 10000 \"test/**/*.spec.js\"",
+        "test:node": "node --test test/*.test.js"
     },
     "devDependencies": {
-        "@electric-sql/pglite": "^0.5.14"
+        "@electric-sql/pglite": "^0.5.14",
+        "chai": "4.5.0",
+        "chai-http": "4.4.0",
+        "mocha": "10.8.2"
     }
 }
