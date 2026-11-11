@@ -1,0 +1,120 @@
+
+<main class="container recipe-page py-4 py-md-5">
+
+  <a href="/recipes" class="recipe-title-link">
+    Back to Discover
+  </a>
+
+  <h1 class="fw-bold mt-4">Post a Recipe</h1>
+
+  <p class="text-secondary">
+    Share your recipe, then rate it using PlateShare's ranking system.
+  </p>
+
+  {{#if error}}
+    <div class="alert alert-danger" role="alert">
+      {{error}}
+    </div>
+  {{/if}}
+
+  <form method="post" action="/recipes/new">
+
+    <input type="hidden" name="_csrf" value="{{csrfToken}}">
+
+    <div class="mb-3">
+      <label class="form-label" for="new-title">
+        Recipe title *
+      </label>
+      <input class="form-control" id="new-title"
+             name="title" type="text" maxlength="150"
+             required value="{{form.title}}">
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label" for="new-cuisine">
+        Cuisine (optional)
+      </label>
+      <input class="form-control" id="new-cuisine"
+             name="cuisine" type="text" maxlength="100"
+             value="{{form.cuisine}}">
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label" for="new-description">
+        Description (optional)
+      </label>
+      <textarea class="form-control" id="new-description"
+                name="description" rows="3"
+                maxlength="2000">{{form.description}}</textarea>
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label" for="new-ingredients">
+        Ingredients *
+      </label>
+      <textarea class="form-control" id="new-ingredients"
+                name="ingredients" rows="5" maxlength="5000"
+                required placeholder="One ingredient per line">{{form.ingredients}}</textarea>
+      <div class="form-text">
+        Enter one ingredient per line (up to 40).
+      </div>
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label" for="new-directions">
+        Directions *
+      </label>
+      <textarea class="form-control" id="new-directions"
+                name="directions" rows="6"
+                maxlength="10000" required>{{form.directions}}</textarea>
+    </div>
+
+    <div class="row g-3 mb-3">
+      <div class="col-md-4">
+        <label class="form-label" for="new-prep">
+          Prep time (minutes)
+        </label>
+        <input class="form-control" id="new-prep"
+               type="number" min="0" max="10080" step="1"
+               name="prep_time" value="{{form.prep_time}}">
+      </div>
+
+      <div class="col-md-4">
+        <label class="form-label" for="new-cook">
+          Cook time (minutes)
+        </label>
+        <input class="form-control" id="new-cook"
+               type="number" min="0" max="10080" step="1"
+               name="cook_time" value="{{form.cook_time}}">
+      </div>
+
+      <div class="col-md-4">
+        <label class="form-label" for="new-servings">
+          Servings
+        </label>
+        <input class="form-control" id="new-servings"
+               type="number" min="1" max="1000" step="1"
+               name="servings" value="{{form.servings}}">
+      </div>
+    </div>
+
+    <div class="mb-4">
+      <label class="form-label" for="new-image">
+        Image URL (optional)
+      </label>
+      <input class="form-control" id="new-image"
+             name="image_url" type="url" maxlength="2048"
+             value="{{form.image_url}}"
+             placeholder="https://example.com/recipe.jpg">
+    </div>
+
+    <button class="btn btn-success" type="submit">
+      Post Recipe &amp; Rate
+    </button>
+
+    <a href="/profile" class="btn btn-outline-secondary">
+      Cancel
+    </a>
+
+  </form>
+</main>

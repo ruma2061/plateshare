@@ -5,7 +5,15 @@
       <h1 class="fw-bold mb-2">{{#if isLibrary}}My Recipes{{else}}Your next great bite{{/if}}</h1>
       {{#unless isLibrary}}<p class="text-secondary mb-0">Something worth making. Something worth keeping.</p>{{/unless}}
     </div>
-    {{#if isLibrary}}<a class="btn btn-outline-success" href="/recipes">Browse recipes</a>{{/if}}
+    {{#if isLibrary}}
+      <a class="btn btn-outline-success" href="/recipes">
+        Browse recipes
+      </a>
+    {{else}}
+      <a class="btn btn-success" href="/recipes/new">
+        + Post Recipe
+      </a>
+    {{/if}}
   </div>
 
   {{#if isLibrary}}
