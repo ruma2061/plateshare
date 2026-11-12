@@ -15,7 +15,8 @@
     "scripts": {
         "prestart": "npm install",
         "start": "nodemon src/index.js",
-        "test": "npm run test:lab10 && npm run test:recipes",
+        "test": "npm run test:lab10 && npm run test:recipes && npm run test:security",
+        "test:security": "node --test test/session-security.test.js test/password-security.test.js",
         "test:lab10": "mocha --timeout 10000 \"test/**/*.spec.js\"",
         "test:recipes": "node --test test/recipe-posting.test.js test/rating-routes.test.js"
     },

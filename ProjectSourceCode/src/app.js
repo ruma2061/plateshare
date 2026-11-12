@@ -385,6 +385,12 @@ function createApp(db, { sessionSecret = process.env.SESSION_SECRET } = {}) {
     try {
       const username = typeof req.body.username === 'string' ? req.body.username.trim() : '';
       const password = req.body.password;
+      if (typeof password !== 'string' || !password || Buffer.byteLength(password, 'utf8') > 72) {
+        return res.status(400).render('pages/login', {
+          message: 'Incorrect username or password.',
+          error: true
+        });
+      }
       const user = await db.oneOrNone(
           'SELECT * FROM users WHERE username = $1',
           [username]        
