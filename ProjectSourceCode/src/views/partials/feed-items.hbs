@@ -1,0 +1,32 @@
+{{#each items}}
+  <li class="feed-item">
+    <article class="feed-card">
+      <header class="feed-card-header">
+        <a class="feed-avatar" href="{{actorUrl}}" tabindex="-1" aria-hidden="true">{{actorInitial}}</a>
+        <p class="mb-0">
+          <a class="feed-actor" href="{{actorUrl}}">{{actor}}</a>
+          {{#if isPost}}posted a recipe{{else}}rated a recipe{{/if}}
+          {{#if timeLabel}}<time class="feed-time" datetime="{{isoTime}}">{{timeLabel}}</time>{{/if}}
+        </p>
+      </header>
+      <a class="feed-recipe" href="{{recipeUrl}}">
+        {{#if imageUrl}}
+          <img src="{{imageUrl}}" class="feed-recipe-image" alt="" loading="lazy" referrerpolicy="no-referrer">
+        {{else}}
+          <span class="feed-recipe-image feed-recipe-placeholder" aria-hidden="true">{{> icon leaf=true}}</span>
+        {{/if}}
+        <span class="feed-recipe-text">
+          <span class="recipe-eyebrow d-block mb-1">{{#if cuisine}}{{cuisine}}{{else}}From the community{{/if}}</span>
+          <span class="feed-recipe-title">{{title}}</span>
+          {{#if description}}<span class="recipe-description d-block mt-1 mb-0">{{description}}</span>{{/if}}
+        </span>
+      </a>
+      {{#if isRating}}
+        <p class="feed-rating mb-0">
+          {{#if sentiment}}<span aria-hidden="true">{{sentiment.emoji}}</span> {{sentiment.label}}{{/if}}
+          {{#if score}}<strong>{{score}} / 10</strong>{{else if stars}}<strong>{{stars}} / 5</strong>{{/if}}
+        </p>
+      {{/if}}
+    </article>
+  </li>
+{{/each}}

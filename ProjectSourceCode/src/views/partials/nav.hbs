@@ -5,6 +5,7 @@
     {{#if user}}
       <div class="desktop-navigation">
         <a href="/recipes" {{#if recipesActive}}aria-current="page"{{/if}}>Discover</a>
+        <a href="/feed" {{#if feedActive}}aria-current="page"{{/if}}>Feed</a>
         <a href="/discover" {{#if discoverActive}}aria-current="page"{{/if}}>Find cooks</a>
         <a href="/my-recipes" {{#if libraryActive}}aria-current="page"{{/if}}>My Recipes</a>
         <a href="/profile" {{#if profileActive}}aria-current="page"{{/if}}>Profile</a>
@@ -19,6 +20,7 @@
 {{#if user}}
   <nav class="mobile-navigation" aria-label="Mobile navigation">
     <a href="/recipes" {{#if recipesActive}}aria-current="page"{{/if}}>{{> icon compass=true}}<span>Discover</span></a>
+    <a href="/feed" {{#if feedActive}}aria-current="page"{{/if}}>{{> icon feed=true}}<span>Feed</span></a>
     <a href="/discover" {{#if discoverActive}}aria-current="page"{{/if}}>{{> icon people=true}}<span>Find cooks</span></a>
     <a href="/my-recipes" {{#if libraryActive}}aria-current="page"{{/if}}>{{> icon list=true}}<span>My Recipes</span></a>
     <a href="/profile" {{#if profileActive}}aria-current="page"{{/if}}>{{> icon person=true}}<span>Profile</span></a>

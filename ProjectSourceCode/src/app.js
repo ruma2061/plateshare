@@ -3,6 +3,7 @@
 // *****************************************************
 
 const { createRecipeRouter } = require('./recipes/router');
+const { createFeedRouter } = require('./feed/router');
 const { loadProfileContent } = require('./profiles/content');
 const { prepareCsrf, verifyCsrf } = require('./middleware/csrf');
 const auth = require('./middleware/auth');
@@ -803,6 +804,9 @@ function createApp(db, { sessionSecret = process.env.SESSION_SECRET } = {}) {
   });
 
 
+
+  // Friends feed (#15)
+  app.use(createFeedRouter(db));
 
   return app;
 }

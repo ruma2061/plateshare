@@ -90,7 +90,7 @@ a { text-underline-offset: .2em; }
   .site-brand { font-size: 1.85rem; }
   .desktop-navigation { display: none; }
   .signed-in { padding-bottom: calc(86px + env(safe-area-inset-bottom)); }
-  .mobile-navigation { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); position: fixed; z-index: 1030; bottom: 0; left: 0; right: 0; background: var(--ps-paper); border-top: 1px solid var(--ps-line); padding: .8rem .5rem calc(.65rem + env(safe-area-inset-bottom)); }
+  .mobile-navigation { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); position: fixed; z-index: 1030; bottom: 0; left: 0; right: 0; background: var(--ps-paper); border-top: 1px solid var(--ps-line); padding: .8rem .5rem calc(.65rem + env(safe-area-inset-bottom)); }
   .mobile-navigation a { min-height: 52px; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: .3rem; color: #718078; text-decoration: none; font-size: .7rem; position: relative; }
   .mobile-navigation a[aria-current] { color: var(--ps-green); font-weight: 700; }
   .mobile-navigation a[aria-current]::after { content: ''; height: 4px; width: 4px; border-radius: 50%; background: var(--ps-green); position: absolute; bottom: -.25rem; }
@@ -128,4 +128,31 @@ a { text-underline-offset: .2em; }
 .recipe-comment-body {
   white-space: pre-wrap;
   overflow-wrap: anywhere;
+}
+
+/* Friends feed (#15) */
+.feed-page { max-width: 760px; }
+.feed-list { list-style: none; padding: 0; margin: 0; display: grid; gap: 1rem; }
+.feed-card { padding: 1.1rem 1.2rem; border: 1px solid var(--ps-line); border-radius: 1.4rem; background: #fff; }
+.feed-card-header { display: flex; align-items: center; gap: .75rem; margin-bottom: .9rem; font-size: .92rem; }
+.feed-avatar { width: 40px; height: 40px; display: grid; place-items: center; flex: none; border-radius: 50%; background: #e3ecd9; color: var(--ps-green); font-family: Georgia, serif; font-size: 1.15rem; text-decoration: none; }
+.feed-actor { color: var(--ps-ink); font-weight: 700; text-decoration: none; overflow-wrap: anywhere; }
+.feed-actor:hover { color: var(--ps-green); text-decoration: underline; }
+.feed-time { color: var(--ps-muted); font-size: .8rem; margin-left: .35rem; white-space: nowrap; }
+.feed-recipe { display: flex; gap: 1rem; align-items: center; padding: .6rem; border-radius: 1rem; background: #f6f8f2; color: var(--ps-ink); text-decoration: none; }
+.feed-recipe:hover, .feed-recipe:focus-visible { background: var(--ps-soft); }
+.feed-recipe:hover .feed-recipe-title { color: var(--ps-green); text-decoration: underline; }
+.feed-recipe-image { width: 88px; height: 88px; flex: none; border-radius: .8rem; object-fit: cover; }
+.feed-recipe-placeholder { display: grid; place-items: center; background: #e8eddf; color: #64785b; }
+.feed-recipe-placeholder .ps-icon { width: 30px; height: 30px; }
+.feed-recipe-text { min-width: 0; }
+.feed-recipe-title { display: block; font-weight: 700; font-size: 1.05rem; letter-spacing: -.02em; overflow-wrap: anywhere; }
+.feed-recipe .recipe-description { -webkit-line-clamp: 2; }
+.feed-rating { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem; margin-top: .85rem; font-size: .92rem; color: var(--ps-muted); }
+.feed-rating strong { color: var(--ps-ink); margin-left: auto; }
+.feed-more, .feed-end { text-align: center; margin: 1.75rem 0 .5rem; }
+.feed-empty { padding: 2.5rem 1.5rem; text-align: center; border: 1px dashed #c9d5c4; border-radius: 1.4rem; background: #fff; }
+@media (max-width: 480px) {
+  .feed-card { padding: .95rem; }
+  .feed-recipe-image { width: 68px; height: 68px; }
 }

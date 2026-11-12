@@ -1,0 +1,37 @@
+<main class="container recipe-page feed-page py-4">
+  <div class="d-flex flex-wrap justify-content-between align-items-end gap-3 mb-4">
+    <div>
+      <p class="recipe-eyebrow mb-2">From people you follow</p>
+      <h1 class="mb-2">Friends feed</h1>
+      <p class="text-secondary mb-0">New recipes and ratings from the cooks you follow.</p>
+    </div>
+    <a class="btn btn-outline-success" href="/discover">Find cooks</a>
+  </div>
+
+  {{#if items.length}}
+    <ol class="feed-list" id="feed-list" data-feed aria-label="Friend activity">
+      {{> feed-items items=items}}
+    </ol>
+    {{#if nextUrl}}
+      <div class="feed-more">
+        <a class="btn btn-outline-success" href="{{nextUrl}}" data-feed-more>Load more</a>
+      </div>
+    {{else}}
+      <p class="feed-end text-secondary">You're all caught up.</p>
+    {{/if}}
+  {{else if isFirstPage}}
+    <section class="feed-empty">
+      {{#if followsSomeone}}
+        <h2 class="h5">Nothing here yet</h2>
+        <p class="text-secondary">When the cooks you follow post or rate a recipe, it shows up here.</p>
+        <a class="btn btn-success" href="/recipes">Browse recipes</a>
+      {{else}}
+        <h2 class="h5">You're not following anyone yet</h2>
+        <p class="text-secondary">Follow a few cooks to see what they're making and how they rate it.</p>
+        <a class="btn btn-success" href="/discover">Find cooks</a>
+      {{/if}}
+    </section>
+  {{else}}
+    <p class="feed-end text-secondary">You're all caught up. <a href="/feed">Back to the top</a></p>
+  {{/if}}
+</main>
