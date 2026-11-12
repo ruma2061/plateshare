@@ -152,6 +152,10 @@ a { text-underline-offset: .2em; }
 .feed-rating strong { color: var(--ps-ink); margin-left: auto; }
 .feed-more, .feed-end { text-align: center; margin: 1.75rem 0 .5rem; }
 .feed-empty { padding: 2.5rem 1.5rem; text-align: center; border: 1px dashed #c9d5c4; border-radius: 1.4rem; background: #fff; }
+.feed-more .btn[aria-busy="true"] { pointer-events: none; opacity: .65; }
+.feed-item.is-new { animation: feed-in .35s ease-out; }
+@keyframes feed-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .feed-item.is-new { animation: none; } }
 @media (max-width: 480px) {
   .feed-card { padding: .95rem; }
   .feed-recipe-image { width: 68px; height: 68px; }

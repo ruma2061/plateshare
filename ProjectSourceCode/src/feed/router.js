@@ -58,11 +58,28 @@ function createFeedRouter(db) {
       let cursor = null;
       if (req.query.before !== undefined) {
         cursor = decodeCursor(req.query.before);
-        if (!cursor) return res.redirect('/feed');
+        if (!cursor) {
+          return req.query.partial === '1' ? res.status(400).send('Invalid feed position.') : res.redirect('/feed');
+        }
       }
+
+      const partial = req.query.partial === '1';
+      if (partial && !cursor) return res.status(400).send('Missing feed position.');
 
       const { items, nextCursor } = await loadFeedPage(db, { viewerId, cursor });
       const now = new Date();
+      const nextUrl = nextCursor ? `/feed?before=${encodeURIComponent(nextCursor)}` : null;
+
+      // Infinite scroll asks for just the next batch of cards.
+      if (partial) {
+        res.set('Cache-Control', 'no-store');
+        if (nextUrl) res.set('X-Feed-Next', nextUrl);
+        return res.render('partials/feed-items', {
+          layout: false,
+          items: items.map(row => presentFeedItem(row, now)),
+        });
+      }
+
       const following = cursor ? null : await db.one(
         'SELECT COUNT(*)::int AS count FROM follows WHERE follower_id = $1', [viewerId]);
 
@@ -72,7 +89,7 @@ function createFeedRouter(db) {
         items: items.map(row => presentFeedItem(row, now)),
         isFirstPage: !cursor,
         followsSomeone: !following || following.count > 0,
-        nextUrl: nextCursor ? `/feed?before=${encodeURIComponent(nextCursor)}` : null,
+        nextUrl,
       });
     } catch (error) {
       return next(error);

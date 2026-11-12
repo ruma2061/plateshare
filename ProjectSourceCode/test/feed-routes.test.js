@@ -97,6 +97,47 @@ test('a tampered cursor restarts the feed instead of erroring', async () => {
   assert.equal(response.headers.get('location'), '/feed');
 });
 
+test('infinite scroll gets bare cards plus the next position', async () => {
+  await db.engine.exec(`
+    INSERT INTO recipes (user_id, title, directions, recipe_type, created_at)
+    SELECT 2, 'Batch ' || LPAD(n::text, 2, '0'), 'Cook.', 'user', TIMESTAMP '2026-11-10 12:00' + n * INTERVAL '1 minute'
+    FROM generate_series(1, 25) n;
+  `);
+  const alice = await site.client(1);
+  const first = await (await alice.request('/feed')).text();
+  assert.match(first, /src="\/resources\/js\/feed.js"/);
+  let next = first.match(/href="(\/feed\?before[^"]+)" data-feed-more/)[1].replace(/&#x3D;/g, '=');
+
+  const titles = [...first.matchAll(/class="feed-recipe-title">([^<]+)</g)].map(m => m[1]);
+  let requests = 0;
+  while (next && requests < 10) {
+    const response = await alice.request(`${next}&partial=1`);
+    assert.equal(response.status, 200);
+    assert.equal(response.headers.get('cache-control'), 'no-store');
+    const html = await response.text();
+    assert.doesNotMatch(html, /<html|site-header|<main/);
+    titles.push(...[...html.matchAll(/class="feed-recipe-title">([^<]+)</g)].map(m => m[1]));
+    next = response.headers.get('x-feed-next');
+    requests += 1;
+  }
+
+  // 25 batch posts + Bob soup + one rating, each exactly once.
+  assert.equal(requests, 2);
+  assert.equal(titles.length, 27);
+  assert.equal(new Set(titles.filter(t => t.startsWith('Batch'))).size, 25);
+});
+
+test('infinite scroll rejects missing or bad positions', async () => {
+  const alice = await site.client(1);
+  assert.equal((await alice.request('/feed?partial=1')).status, 400);
+  assert.equal((await alice.request('/feed?before=bogus&partial=1')).status, 400);
+
+  const guest = await site.client();
+  const response = await guest.request('/feed?before=x&partial=1');
+  assert.equal(response.status, 302);
+  assert.equal(response.headers.get('location'), '/login');
+});
+
 test('time labels read naturally', () => {
   const now = new Date('2026-11-12T12:00:00Z');
   assert.equal(timeAgo(new Date('2026-11-12T11:59:30Z'), now), 'just now');

@@ -16,6 +16,7 @@
       <div class="feed-more">
         <a class="btn btn-outline-success" href="{{nextUrl}}" data-feed-more>Load more</a>
       </div>
+      <p class="feed-end text-secondary" data-feed-end hidden>You're all caught up.</p>
     {{else}}
       <p class="feed-end text-secondary">You're all caught up.</p>
     {{/if}}
@@ -35,3 +36,5 @@
     <p class="feed-end text-secondary">You're all caught up. <a href="/feed">Back to the top</a></p>
   {{/if}}
 </main>
+<p class="visually-hidden" aria-live="polite" data-feed-status></p>
+<script src="/resources/js/feed.js" defer></script>
