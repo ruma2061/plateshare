@@ -8,6 +8,11 @@ function validateRegistration({ username, password }) {
     return 'Password must be at least 8 characters.';
   }
 
+  // bcrypt ignores input after 72 bytes, so reject passwords it would truncate.
+  if (Buffer.byteLength(password, 'utf8') > 72) {
+    return 'Password must be at most 72 bytes.';
+  }
+
   return null;
 }
 

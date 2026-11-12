@@ -385,6 +385,12 @@ function createApp(db, { sessionSecret = process.env.SESSION_SECRET } = {}) {
     try {
       const username = typeof req.body.username === 'string' ? req.body.username.trim() : '';
       const password = req.body.password;
+      if (typeof password !== 'string' || !password || Buffer.byteLength(password, 'utf8') > 72) {
+        return res.status(400).render('pages/login', {
+          message: 'Incorrect username or password.',
+          error: true
+        });
+      }
       const user = await db.oneOrNone(
           'SELECT * FROM users WHERE username = $1',
           [username]        
@@ -403,14 +409,20 @@ function createApp(db, { sessionSecret = process.env.SESSION_SECRET } = {}) {
               error: true
           });
       }
-      req.session.user = { 
-        user_id: user.user_id,
-        username: user.username };
-      req.session.save((err) => {
+      // Replace the old session before granting access to the authenticated user.
+      req.session.regenerate((err) => {
+        if (err) {
+          return res.status(500).send('Session error');
+        }
+        req.session.user = {
+          user_id: user.user_id,
+          username: user.username };
+        req.session.save((err) => {
           if (err) {
-              return res.status(500).send('Session error');
+            return res.status(500).send('Session error');
           }
           res.redirect('/profile');
+        });
       });
     } catch (err) {
       console.error(err)
