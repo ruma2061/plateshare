@@ -403,14 +403,20 @@ function createApp(db, { sessionSecret = process.env.SESSION_SECRET } = {}) {
               error: true
           });
       }
-      req.session.user = { 
-        user_id: user.user_id,
-        username: user.username };
-      req.session.save((err) => {
+      // Replace the old session before granting access to the authenticated user.
+      req.session.regenerate((err) => {
+        if (err) {
+          return res.status(500).send('Session error');
+        }
+        req.session.user = {
+          user_id: user.user_id,
+          username: user.username };
+        req.session.save((err) => {
           if (err) {
-              return res.status(500).send('Session error');
+            return res.status(500).send('Session error');
           }
           res.redirect('/profile');
+        });
       });
     } catch (err) {
       console.error(err)
