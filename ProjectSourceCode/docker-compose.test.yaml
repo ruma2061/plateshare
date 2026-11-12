@@ -1,0 +1,33 @@
+services:
+  db-test:
+    image: postgres:17.6
+    env_file: .env.test
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U "$${POSTGRES_USER}" -d "$${POSTGRES_DB}"']
+      interval: 2s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
+    volumes:
+      - lab10-test-db:/var/lib/postgresql/data
+      - ./src/init_data/create.sql:/docker-entrypoint-initdb.d/00-create.sql:ro
+      - ./src/init_data/zz_001_nutrition_and_saved_recipes.sql:/docker-entrypoint-initdb.d/01-nutrition.sql:ro
+      - ./src/init_data/zz_002_profile_privacy.sql:/docker-entrypoint-initdb.d/02-profiles.sql:ro
+      - ./src/init_data/zz_003_rating_comparisons.sql:/docker-entrypoint-initdb.d/03-ratings.sql:ro
+      - ./src/init_data/zz_004_recipe_comments.sql:/docker-entrypoint-initdb.d/04-comments.sql:ro
+
+  tests:
+    image: node:22.19.0-bookworm
+    working_dir: /repository
+    env_file: .env.test
+    depends_on:
+      db-test:
+        condition: service_healthy
+    volumes:
+      - ./:/repository
+      - lab10-test-node-modules:/repository/node_modules
+    command: ['npm', 'test']
+
+volumes:
+  lab10-test-db:
+  lab10-test-node-modules:

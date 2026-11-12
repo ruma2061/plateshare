@@ -24,9 +24,6 @@
           </p>
         </div>
       </div>
-      {{#if isOwner}}
-        <p class="small text-secondary mb-0">This is your recipe, so you can’t rate it.</p>
-      {{else}}
         <form method="post" action="/recipes/{{recipe.recipe_id}}/rate" class="d-flex flex-wrap gap-2">
           <input type="hidden" name="_csrf" value="{{csrfToken}}">
           {{#each rating.options}}
@@ -38,7 +35,6 @@
           {{/each}}
         </form>
         {{#if rating.hasScore}}<p class="small text-secondary mt-2 mb-0">Pick again to re-rank it.</p>{{/if}}
-      {{/if}}
     </section>
 
     <nav class="recipe-section-links" aria-label="Recipe sections">

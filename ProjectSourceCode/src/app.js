@@ -13,6 +13,7 @@ const path = require('path');
 const bodyParser = require('body-parser');
 const session = require('express-session'); // To set the session object. To store or access session data, use the `req.session`, which is (generally) serialized as JSON by the store.
 const bcrypt = require('bcryptjs'); //  To hash passwords
+const validateRegistration = require('./validateRegistration');
 
 // *****************************************************
 // <!-- Section 2 : Create Application -->
@@ -78,6 +79,13 @@ function createApp(db, { sessionSecret = process.env.SESSION_SECRET } = {}) {
       return res.redirect('/profile');
     }
     res.redirect('/login');
+  });
+
+  app.get('/welcome', (req, res) => {
+    res.json({
+      status: 'success',
+      message: 'Welcome!'
+    });
   });
 
   app.get('/register', (req, res) => {
@@ -413,15 +421,15 @@ function createApp(db, { sessionSecret = process.env.SESSION_SECRET } = {}) {
     }
   });
   app.post('/register', async (req, res) => {
-    const username = typeof req.body.username === 'string' ? req.body.username.trim() : '';
-    const password = req.body.password || '';
-    // check the input on the server too, the form checks can be skipped
-    let error;
-    if (!/^[A-Za-z0-9_]{3,20}$/.test(username)) {
-      error = 'Username must be 3-20 characters and only use letters, numbers, or underscores.';
-    } else if (typeof password !== 'string' || password.length < 8) {
-      error = 'Password must be at least 8 characters.';
-    }
+    const username = typeof req.body.username === 'string'
+      ? req.body.username.trim()
+      : '';
+
+    const password = typeof req.body.password === 'string'
+      ? req.body.password
+      : '';
+
+    const error = validateRegistration({ username, password });
 
     if (error) {
       return res.status(400).render('pages/register', {

@@ -61,13 +61,42 @@ test('re-rating moves a recipe to another thumb group and rescores both', async 
     [[4, 'dislike', 2], [5, 'like', 8.5]]);
 });
 
-test('cannot rate your own recipe, bad input is rejected, and CSRF is required', async () => {
+
+test('authors can rate their own recipe, bad input and CSRF are rejected', async () => {
   const alice = await site.client(1);
-  assert.equal((await alice.request('/recipes/1/rate', { _csrf: alice.token, sentiment: 'like' })).status, 403);
-  assert.equal((await alice.request('/recipes/2/rate', { _csrf: alice.token, sentiment: 'love' })).status, 400);
-  assert.equal((await alice.request('/recipes/2/rate', { sentiment: 'like' })).status, 403);
-  assert.equal((await alice.request('/recipes/2/rate/answer', { _csrf: alice.token, answer: 'better' })).status, 303);
-  assert.deepEqual(await myRatings(), []);
+
+  const response = await alice.request('/recipes/1/rate', {
+    _csrf: alice.token,
+    sentiment: 'like'
+  });
+
+  assert.equal(response.status, 303);
+  assert.equal(response.headers.get('location'), '/recipes/1#rating');
+
+  assert.equal(
+    (await alice.request('/recipes/2/rate', {
+      _csrf: alice.token,
+      sentiment: 'love'
+    })).status,
+    400
+  );
+
+  assert.equal(
+    (await alice.request('/recipes/2/rate', {
+      sentiment: 'like'
+    })).status,
+    403
+  );
+
+  assert.deepEqual(await myRatings(), [
+    {
+      recipe_id: 1,
+      sentiment: 'like',
+      rank_position: 1,
+      score: 8.5,
+      rating: 4
+    }
+  ]);
 });
 
 test('guests are sent to login', async () => {
@@ -87,10 +116,14 @@ test('recipe page shows thumb buttons, then the score once rated', async () => {
   assert.match(html, /8\.5 \/ 10/);
   assert.match(html, /aria-pressed="true"/);
   assert.match(await (await alice.request('/recipes')).text(), /Your score: 8\.5 \/ 10/);
-  // own recipe: no buttons
+  // Authors can now rate their own recipes
   html = await (await alice.request('/recipes/1')).text();
-  assert.match(html, /can’t rate it/);
-  assert.doesNotMatch(html, /name="sentiment"/);
+
+  for (const v of ['like', 'ok', 'dislike']) {
+    assert.match(html, new RegExp(`name="sentiment" value="${v}"`));
+  }
+
+  assert.doesNotMatch(html, /can’t rate it/);
 });
 
 test('comparison page shows both recipes as choices', async () => {

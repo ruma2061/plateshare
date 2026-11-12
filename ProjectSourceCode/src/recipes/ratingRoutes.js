@@ -68,7 +68,7 @@ function registerRatingRoutes(router, { db, loadRecipe, asyncRoute, verifyCsrf }
 
   router.post('/recipes/:recipeId/rate', verifyCsrf, loadRecipe, asyncRoute(async (req, res) => {
     const userId = req.session.user.user_id;
-    if (req.recipe.user_id === userId) return fail(res, 403, "You can't rate your own recipe.");
+
     let sentiment;
     try {
       sentiment = parseSentiment(req.body.sentiment);
