@@ -13,7 +13,6 @@ const path = require('path');
 const bodyParser = require('body-parser');
 const session = require('express-session'); // To set the session object. To store or access session data, use the `req.session`, which is (generally) serialized as JSON by the store.
 const bcrypt = require('bcryptjs'); //  To hash passwords
-const validateRegistration = require('./validateRegistration');
 
 // *****************************************************
 // <!-- Section 2 : Create Application -->
@@ -52,7 +51,8 @@ function createApp(db, { sessionSecret = process.env.SESSION_SECRET } = {}) {
     res.locals.user = req.session.user;
     res.locals.recipeStyles = true;
     res.locals.profileActive = req.path === '/settings/profile' || req.path.startsWith('/profile') || req.path.startsWith('/follow');
-    res.locals.discoverActive = req.path === '/discover';
+    res.locals.discoverActive = req.path === '/discover' || req.path === '/recipes' || req.path.startsWith('/recipes/');
+    res.locals.cooksActive = req.path === '/discover/cooks';
     next();
   });
 
@@ -79,13 +79,6 @@ function createApp(db, { sessionSecret = process.env.SESSION_SECRET } = {}) {
       return res.redirect('/profile');
     }
     res.redirect('/login');
-  });
-
-  app.get('/welcome', (req, res) => {
-    res.json({
-      status: 'success',
-      message: 'Welcome!'
-    });
   });
 
   app.get('/register', (req, res) => {
@@ -348,7 +341,7 @@ function createApp(db, { sessionSecret = process.env.SESSION_SECRET } = {}) {
     }
   });
 
-  app.get('/discover', auth, async (req, res) => {
+  app.get('/discover/cooks', auth, async (req, res) => {
     if (req.query.q !== undefined && typeof req.query.q !== 'string') {
       return res.status(400).send('Enter one search term.');
     }
@@ -365,14 +358,14 @@ function createApp(db, { sessionSecret = process.env.SESSION_SECRET } = {}) {
         [req.session.user.user_id, `%${query}%`]
       );
 
-      return res.render('pages/discover', {
+      return res.render('pages/find-cooks', {
         profiles,
         query
       });
 
     } catch (error) {
       console.error('Error searching users:', error);
-      return res.status(500).render('pages/discover', {
+      return res.status(500).render('pages/find-cooks', {
         profiles: [],
         query,
         message: 'Unable to search users.',
@@ -385,12 +378,6 @@ function createApp(db, { sessionSecret = process.env.SESSION_SECRET } = {}) {
     try {
       const username = typeof req.body.username === 'string' ? req.body.username.trim() : '';
       const password = req.body.password;
-      if (typeof password !== 'string' || !password || Buffer.byteLength(password, 'utf8') > 72) {
-        return res.status(400).render('pages/login', {
-          message: 'Incorrect username or password.',
-          error: true
-        });
-      }
       const user = await db.oneOrNone(
           'SELECT * FROM users WHERE username = $1',
           [username]        
@@ -409,20 +396,14 @@ function createApp(db, { sessionSecret = process.env.SESSION_SECRET } = {}) {
               error: true
           });
       }
-      // Replace the old session before granting access to the authenticated user.
-      req.session.regenerate((err) => {
-        if (err) {
-          return res.status(500).send('Session error');
-        }
-        req.session.user = {
-          user_id: user.user_id,
-          username: user.username };
-        req.session.save((err) => {
+      req.session.user = { 
+        user_id: user.user_id,
+        username: user.username };
+      req.session.save((err) => {
           if (err) {
-            return res.status(500).send('Session error');
+              return res.status(500).send('Session error');
           }
           res.redirect('/profile');
-        });
       });
     } catch (err) {
       console.error(err)
@@ -433,15 +414,15 @@ function createApp(db, { sessionSecret = process.env.SESSION_SECRET } = {}) {
     }
   });
   app.post('/register', async (req, res) => {
-    const username = typeof req.body.username === 'string'
-      ? req.body.username.trim()
-      : '';
-
-    const password = typeof req.body.password === 'string'
-      ? req.body.password
-      : '';
-
-    const error = validateRegistration({ username, password });
+    const username = typeof req.body.username === 'string' ? req.body.username.trim() : '';
+    const password = req.body.password || '';
+    // check the input on the server too, the form checks can be skipped
+    let error;
+    if (!/^[A-Za-z0-9_]{3,20}$/.test(username)) {
+      error = 'Username must be 3-20 characters and only use letters, numbers, or underscores.';
+    } else if (typeof password !== 'string' || password.length < 8) {
+      error = 'Password must be at least 8 characters.';
+    }
 
     if (error) {
       return res.status(400).render('pages/register', {

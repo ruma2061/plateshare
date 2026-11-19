@@ -1,0 +1,46 @@
+<div data-feed-batch>
+  {{#each recipes}}
+    <article class="discover-post" data-recipe-id="{{recipe_id}}" aria-labelledby="feed-title-{{recipe_id}}">
+      <header class="discover-author">
+        <span class="discover-avatar" aria-hidden="true">{{> icon leaf=true}}</span>
+        <div><span class="recipe-eyebrow">From the kitchen of</span><br>
+          {{#if authorUrl}}<a class="recipe-author" href="{{authorUrl}}">{{author}}</a>{{else}}<strong>{{author}}</strong>{{/if}}
+        </div>
+        {{#if cuisine}}<span class="profile-status ms-auto">{{cuisine}}</span>{{/if}}
+      </header>
+      <a class="discover-photo" href="/recipes/{{recipe_id}}" tabindex="-1" aria-hidden="true">
+        <div class="recipe-photo-placeholder">{{> icon leaf=true}}<span>A little inspiration from the kitchen</span></div>
+        {{#if image_url}}<img src="{{image_url}}" alt="{{title}}" loading="lazy" decoding="async" referrerpolicy="no-referrer">{{/if}}
+      </a>
+      <div class="discover-content">
+        <h2 id="feed-title-{{recipe_id}}"><a class="recipe-title-link" href="/recipes/{{recipe_id}}">{{title}}</a></h2>
+        {{#if description}}<p class="recipe-description">{{description}}</p>{{/if}}
+        <dl class="discover-times">
+          <div><dt>Prep time</dt><dd>{{prepLabel}}</dd></div>
+          <div><dt>Cook time</dt><dd>{{cookLabel}}</dd></div>
+          <div><dt>Servings</dt><dd>{{#if servings}}{{servings}}{{else}}Not provided{{/if}}</dd></div>
+        </dl>
+        <div class="discover-actions">
+          <a class="btn btn-outline-success btn-sm" href="/recipes/{{recipe_id}}">View recipe</a>
+          <a class="discover-comments" href="/recipes/{{recipe_id}}#comments">Comments</a>
+          <form class="ms-auto" data-feed-save data-title="{{title}}" method="post" action="/recipes/{{recipe_id}}/{{#if is_saved}}unsave{{else}}save{{/if}}">
+            <input type="hidden" name="_csrf" value="{{@root.csrfToken}}">
+            <input type="hidden" name="returnTo" value="{{@root.returnTo}}">
+            <button class="btn btn-success btn-sm" type="submit" aria-pressed="{{#if is_saved}}true{{else}}false{{/if}}" aria-label="{{#if is_saved}}Remove {{title}} from saved recipes{{else}}Save {{title}}{{/if}}">{{#if is_saved}}Saved · Remove{{else}}Save recipe{{/if}}</button>
+          </form>
+        </div>
+        <p class="small text-secondary mb-0 mt-2" data-save-status role="status"></p>
+      </div>
+    </article>
+  {{else}}
+    <div class="recipe-empty p-4 text-center"><h2 class="h4">{{#if isContinuation}}You're all caught up{{else}}Your next favorite is on its way{{/if}}</h2><p class="mb-0">{{#if isContinuation}}There are no more recipes to show right now.{{else}}No recipes to show yet. Recipes will appear here when they're shared or imported.{{/if}}</p></div>
+  {{/each}}
+  <div class="discover-pagination" data-feed-pagination>
+    {{#if nextUrl}}
+      <a class="btn btn-outline-success" href="{{nextUrl}}" rel="next" data-feed-next>Load more recipes</a>
+    {{else}}
+      {{#if recipes}}<p class="text-secondary">You're all caught up. Come back for another helping.</p>{{/if}}
+      {{#if isContinuation}}<a href="/discover">Back to the latest recipes</a>{{/if}}
+    {{/if}}
+  </div>
+</div>

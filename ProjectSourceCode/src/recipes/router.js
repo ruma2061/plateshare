@@ -7,6 +7,7 @@ const { recipeVisibility } = require('./visibility');
 const { registerRatingRoutes } = require('./ratingRoutes');
 const { ratingForDisplay } = require('./rating');
 const { loadComments, registerCommentRoutes } = require('./comments');
+const { registerDiscoverRoutes } = require('./discover');
 
 const PAGE_SIZE = 12;
 const ORIGIN = 'http://plateshare.local';
@@ -22,7 +23,7 @@ function localReturnTo(value, fallback) {
   if (typeof value !== 'string' || !value.startsWith('/') || value.startsWith('//')) return fallback;
   try {
     const url = new URL(value, ORIGIN);
-    if (url.origin === ORIGIN && /^\/(my-recipes|recipes(?:\/[1-9]\d*)?|profile\/[A-Za-z0-9_]{3,20})$/.test(url.pathname)) {
+    if (url.origin === ORIGIN && /^\/(discover|my-recipes|recipes(?:\/[1-9]\d*)?|profile\/[A-Za-z0-9_]{3,20})$/.test(url.pathname)) {
       return url.pathname + url.search;
     }
   } catch { /* Use the recipe detail page for invalid return targets. */ }
@@ -32,7 +33,13 @@ function localReturnTo(value, fallback) {
 function createRecipeRouter(db) {
   const router = express.Router();
   // Scope authentication/CSRF setup to these features; login routes remain public.
-  router.use(['/recipes', '/my-recipes'], auth, prepareCsrf, (req, res, next) => {
+  router.use(['/recipes', '/my-recipes'], (req, res, next) => {
+    if (req.accepts(['html', 'json']) === 'json') {
+      res.set('Cache-Control', 'no-store');
+      if (!req.session.user) return res.status(401).json({ message: 'Please sign in again.' });
+    }
+    return auth(req, res, next);
+  }, prepareCsrf, (req, res, next) => {
     res.locals.recipeStyles = true;
     res.locals.libraryActive = req.originalUrl.split('?')[0].startsWith('/my-recipes');
     res.locals.recipesActive = !res.locals.libraryActive;
@@ -40,6 +47,7 @@ function createRecipeRouter(db) {
   });
 
   const asyncRoute = handler => (req, res, next) => Promise.resolve(handler(req, res, next)).catch(next);
+  registerDiscoverRoutes(router, { db, selectRecipe, asyncRoute });
 
   router.param('recipeId', (req, res, next, value) => {
     if (!/^[1-9]\d*$/.test(value) || Number(value) > 2147483647) {
@@ -80,11 +88,7 @@ function createRecipeRouter(db) {
     // Escape LIKE wildcards so a search for '%' or '_' means that literal text.
     const search = `%${q.replace(/[\\%_]/g, '\\$&')}%`;
     const collection = isLibrary ? (view === 'rated' ? 'AND my_rating.rating_id IS NOT NULL' : 'AND saved.recipe_id IS NOT NULL') : '';
-    const visibleRecipes = isLibrary
-      ? recipeVisibility
-      : '(r.user_id IS NULL OR u.is_private = FALSE)';
-
-    const filter = `WHERE ${visibleRecipes} AND (r.title ILIKE $2 OR COALESCE(r.cuisine, '') ILIKE $2) ${collection}`;
+    const filter = `WHERE ${recipeVisibility} AND (r.title ILIKE $2 OR COALESCE(r.cuisine, '') ILIKE $2) ${collection}`;
     const count = await db.one(`SELECT COUNT(*)::int AS total FROM (${selectRecipe} ${filter}) matching`, [userId, search]);
     const pageCount = Math.max(1, Math.ceil(count.total / PAGE_SIZE));
     const page = Math.min(requestedPage, pageCount);
@@ -127,165 +131,12 @@ function createRecipeRouter(db) {
     [req.session.user.user_id]);
     res.redirect(303, '/my-recipes');
   }));
-  
-  // Display the recipe creation form
-  router.get('/recipes/new', (req, res) => {
-    res.render('pages/new-recipe', {
-      title: 'Post a Recipe'
-    });
-  });
-
-  // Create a recipe
-  router.post('/recipes/new', verifyCsrf, asyncRoute(async (req, res) => {
-    const read = value =>
-      typeof value === 'string' ? value.trim() : '';
-
-    const body = req.body || {};
-
-    const form = {
-      title: read(body.title),
-      description: read(body.description),
-      cuisine: read(body.cuisine),
-      ingredients: read(body.ingredients),
-      directions: read(body.directions),
-      prep_time: read(body.prep_time),
-      cook_time: read(body.cook_time),
-      servings: read(body.servings),
-      image_url: read(body.image_url)
-    };
-
-    const names = [...new Set(
-      form.ingredients
-        .split(/\r?\n/)
-        .map(name => name.trim())
-        .filter(Boolean)
-    )];
-
-    const validOptionalInt = (raw, min, max) =>
-      raw === '' ||
-      (/^\d+$/.test(raw) &&
-       Number(raw) >= min &&
-       Number(raw) <= max);
-
-    let validImage = true;
-
-    if (form.image_url) {
-      try {
-        const url = new URL(form.image_url);
-        validImage =
-          ['http:', 'https:'].includes(url.protocol) &&
-          !url.username &&
-          !url.password;
-      } catch {
-        validImage = false;
-      }
-    }
-
-    let error;
-
-    if (!form.title || !form.directions || !names.length) {
-      error = 'Enter a recipe title, at least one ingredient, and directions.';
-    } else if (
-      form.title.length > 150 ||
-      form.cuisine.length > 100 ||
-      form.description.length > 2000 ||
-      form.directions.length > 10000 ||
-      form.ingredients.length > 5000 ||
-      names.length > 40 ||
-      names.some(name => name.length > 100) ||
-      form.image_url.length > 2048
-    ) {
-      error = 'One or more fields exceed the allowed length.';
-    } else if (Object.values(form).some(value => value.includes('\0'))) {
-      error = 'Fields cannot contain null characters.';
-    } else if (
-      !validOptionalInt(form.prep_time, 0, 10080) ||
-      !validOptionalInt(form.cook_time, 0, 10080) ||
-      !validOptionalInt(form.servings, 1, 1000)
-    ) {
-      error = 'Enter valid preparation time, cooking time, and serving counts.';
-    } else if (!validImage) {
-      error = 'Image URL must be a valid http or https URL.';
-    }
-
-    if (error) {
-      return res.status(400).render('pages/new-recipe', {
-        title: 'Post a Recipe',
-        form,
-        error
-      });
-    }
-
-    try {
-      const recipe = await db.tx(async t => {
-        const created = await t.one(
-          `INSERT INTO recipes
-            (user_id, title, description, directions,
-             cuisine, prep_time, cook_time, servings,
-             image_url, recipe_type)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'user')
-           RETURNING recipe_id`,
-          [
-            req.session.user.user_id,
-            form.title,
-            form.description || null,
-            form.directions,
-            form.cuisine || null,
-            form.prep_time === '' ? null : Number(form.prep_time),
-            form.cook_time === '' ? null : Number(form.cook_time),
-            form.servings === '' ? null : Number(form.servings),
-            form.image_url || null
-          ]
-        );
-
-        for (const name of names) {
-          await t.none(
-            `INSERT INTO ingredients (name)
-             VALUES ($1)
-             ON CONFLICT (name) DO NOTHING`,
-            [name]
-          );
-
-          const ingredient = await t.one(
-            `SELECT ingredient_id
-             FROM ingredients
-             WHERE name = $1`,
-            [name]
-          );
-
-          await t.none(
-            `INSERT INTO recipe_ingredients
-               (recipe_id, ingredient_id)
-             VALUES ($1, $2)`,
-            [created.recipe_id, ingredient.ingredient_id]
-          );
-        }
-
-        return created;
-      });
-
-      // Open the new recipe at its rating section
-      return res.redirect(
-        303,
-        `/recipes/${recipe.recipe_id}#rating`
-      );
-
-    } catch (dbError) {
-      console.error('Unable to create recipe:', dbError);
-
-      return res.status(500).render('pages/new-recipe', {
-        title: 'Post a Recipe',
-        form,
-        error: 'Unable to post your recipe. Please try again.'
-      });
-    }
-  }));
-
   router.get('/recipes/:recipeId', loadRecipe, asyncRoute((req, res) => renderDetail(req, res)));
 
   router.post('/recipes/:recipeId/save', verifyCsrf, loadRecipe, asyncRoute(async (req, res) => {
     await db.none(`INSERT INTO saved_recipes (user_id, recipe_id) VALUES ($1, $2)
       ON CONFLICT (user_id, recipe_id) DO NOTHING`, [req.session.user.user_id, req.recipeId]);
+    if (req.accepts(['html', 'json']) === 'json') return res.json({ isSaved: true });
     res.redirect(303, localReturnTo(req.body.returnTo, `/recipes/${req.recipeId}`));
   }));
 
@@ -295,6 +146,7 @@ function createRecipeRouter(db) {
     const exists = await db.oneOrNone('SELECT recipe_id FROM recipes WHERE recipe_id = $1', [req.recipeId]);
     if (!exists) return res.status(404).render('pages/recipe-error', { message: 'Recipe not found.' });
     await db.none('DELETE FROM saved_recipes WHERE user_id = $1 AND recipe_id = $2', [req.session.user.user_id, req.recipeId]);
+    if (req.accepts(['html', 'json']) === 'json') return res.json({ isSaved: false });
     res.redirect(303, localReturnTo(req.body.returnTo, `/recipes/${req.recipeId}`));
   }));
 
