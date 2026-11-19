@@ -10,11 +10,7 @@
         <form method="post" action="/recipes/{{../recipe.recipe_id}}/rate/answer" class="h-100">
           <input type="hidden" name="_csrf" value="{{../csrfToken}}">
           <button type="submit" name="answer" value="{{answer}}" class="card recipe-card rate-choice w-100 h-100 p-0 text-start">
-            {{#if item.image_url}}
-              <img src="{{item.image_url}}" class="card-img-top recipe-card-image" alt="" referrerpolicy="no-referrer">
-            {{else}}
-              <div class="recipe-photo-placeholder" aria-hidden="true">{{> icon leaf=true}}</div>
-            {{/if}}
+            {{> recipe-photo recipe=item className="rate-choice-photo"}}
             <span class="card-body d-block">
               <span class="recipe-eyebrow d-block mb-1">{{tag}}</span>
               <span class="h5 d-block mb-0">{{item.title}}</span>

@@ -1,57 +1,24 @@
-
-<div class="container mt-4">
-
-  <h1>Find Users</h1>
-  <p>Search for other PlateShare users.</p>
-
-  <form action="/discover" method="GET" class="mb-4">
+<main class="container recipe-page py-4 py-md-5">
+  <p class="recipe-eyebrow">The people behind the plates</p>
+  <h1>Good taste brings us together.</h1>
+  <p class="text-secondary">Find friends, discover new cooks, and see what they’re making.</p>
+  <form action="/discover" method="GET" class="cook-search" role="search" aria-label="Find cooks">
+    <label for="cook-search" class="form-label">Search by username</label>
     <div class="input-group">
-      <input
-        type="text"
-        name="q"
-        class="form-control"
-        placeholder="Search usernames..."
-        value="{{query}}"
-      >
-      <button type="submit" class="btn btn-primary">
-        Search
-      </button>
+      <input type="search" name="q" id="cook-search" class="form-control" placeholder="Find a cook…" value="{{query}}">
+      <button type="submit" class="btn btn-success">Search</button>
     </div>
   </form>
-
-  {{#if error}}
-    <div class="alert alert-danger">
-      {{message}}
-    </div>
-  {{/if}}
-
-  <div class="list-group">
+  {{#if error}}<div class="alert alert-danger" role="alert">{{message}}</div>{{/if}}
+  <div class="cook-list">
     {{#each profiles}}
-      <a href="/profile/{{this.username}}"
-         class="list-group-item list-group-item-action">
-
-        <div class="d-flex justify-content-between align-items-center">
-          <div>
-            <strong>{{this.username}}</strong>
-
-            {{#if this.is_private}}
-              <span class="badge bg-secondary ms-2">
-                Private
-              </span>
-            {{/if}}
-          </div>
-
-          <span class="btn btn-outline-primary btn-sm">
-            View Profile
-          </span>
-        </div>
-
+      <a href="/profile/{{this.username}}" class="cook-card">
+        <span class="profile-avatar" aria-hidden="true">{{> icon person=true}}</span>
+        <div class="cook-card-name"><strong>{{this.username}}</strong>{{#if this.is_private}}<span class="profile-status ms-2">Private</span>{{/if}}</div>
+        <span class="cook-card-action">View profile</span>
       </a>
     {{else}}
-      <p class="text-muted">
-        No users found.
-      </p>
+      <section class="recipe-empty p-4"><h2 class="h5">No users found.</h2><p class="text-secondary mb-0">Try another username to find someone’s kitchen.</p></section>
     {{/each}}
   </div>
-
-</div>
+</main>

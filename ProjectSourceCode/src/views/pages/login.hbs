@@ -1,38 +1,26 @@
-<div class="container mt-3 mt-md-5">
-  <div class="row justify-content-center">
-    <div class="col-12 col-sm-10 col-md-7 col-lg-5">
-      <h2>Plateshare Login</h2>
-
+<main class="container auth-page">
+  <div class="auth-layout">
+    <section class="auth-story" aria-label="Welcome to the PlateShare community">
+      <img src="/resources/images/recipes/kitchen.jpg" alt="Fresh ingredients and a colorful meal, ready to share" width="1000" height="700">
+      <div class="auth-story-copy"><h2>Good food.<br>Great company.</h2><p>Your next favorite recipe is waiting.</p></div>
+    </section>
+    <section class="auth-form" aria-labelledby="login-title">
+      <p class="recipe-eyebrow">Back to your kitchen</p>
+      <h1 id="login-title">Welcome back.</h1>
+      <p class="mb-4">Log in to save, cook, and share what you love.</p>
       {{> message}}
-
       <form action="/login" method="POST">
         <div class="mb-3">
           <label for="username" class="form-label">Username</label>
-          <input
-            type="text"
-            class="form-control"
-            id="username"
-            name="username"
-            required
-          />
+          <input type="text" class="form-control" id="username" name="username" autocomplete="username" required>
         </div>
-
-        <div class="mb-3">
+        <div class="mb-4">
           <label for="password" class="form-label">Password</label>
-          <input
-            type="password"
-            class="form-control"
-            id="password"
-            name="password"
-            required
-          />
+          <input type="password" class="form-control" id="password" name="password" autocomplete="current-password" required>
         </div>
-
         <button type="submit" class="btn btn-primary w-100">Login</button>
       </form>
-      <p class="mt-3">
-        Don't have an account? <a href="/register">Register here</a>
-      </p>
-    </div>
+      <p class="mt-4 mb-0">New around here? <a href="/register">Create an account</a></p>
+    </section>
   </div>
-</div>
+</main>

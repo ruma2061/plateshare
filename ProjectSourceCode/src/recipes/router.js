@@ -110,6 +110,9 @@ function createRecipeRouter(db) {
       userInitial: req.session.user.username.slice(0, 1).toUpperCase(),
       recentSort: sort === 'recent', titleSort: sort === 'title', ratingSort: sort === 'rating',
       hasSearch: Boolean(q), total: count.total, page, pageCount,
+      topics: [['', 'All recipes'], ['pasta', 'Pasta'], ['chicken', 'Chicken'], ['salad', 'Salads'], ['soup', 'Soups'], ['chocolate', 'Something sweet']]
+        .map(([query, label]) => ({ label, active: q.toLowerCase() === query,
+          url: `/recipes?${new URLSearchParams({ q: query, sort })}` })),
       previousUrl: page > 1 ? link(page - 1) : null,
       nextUrl: page < pageCount ? link(page + 1) : null,
       savedUrl: link(1, 'saved'), ratedUrl: link(1, 'rated'),
