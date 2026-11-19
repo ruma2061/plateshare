@@ -5,18 +5,20 @@ const pgp = require('pg-promise')();
 
 async function applySchema(engine) {
   const directory = path.join(__dirname, '../../src/init_data');
-  for (const file of (await readdir(directory)).filter(name => name.endsWith('.sql')).sort()) {
+  // Catalog seed data is a fresh-install operation, not a repeatable migration.
+  for (const file of (await readdir(directory)).filter(name => name === 'create.sql' || /^zz_.*\.sql$/.test(name)).sort()) {
     await engine.exec(await readFile(path.join(directory, file), 'utf8'));
   }
 }
 
-async function createDatabase({ baseOnly = false } = {}) {
+async function createDatabase({ baseOnly = false, seed = false } = {}) {
   const engine = await PGlite.create();
   if (baseOnly) {
     await engine.exec(await readFile(path.join(__dirname, '../../src/init_data/create.sql'), 'utf8'));
   } else {
     await applySchema(engine);
   }
+  if (seed) await engine.exec(await readFile(path.join(__dirname, '../../src/init_data/insert.sql'), 'utf8'));
   // Use pg-promise's production parameter formatter with a real PostgreSQL engine.
   function adapter(connection) {
     const query = async (sql, values) => (await connection.query(pgp.as.format(sql, values))).rows;

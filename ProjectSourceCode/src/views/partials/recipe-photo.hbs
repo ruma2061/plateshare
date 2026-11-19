@@ -1,0 +1,6 @@
+<span class="recipe-image {{className}}">
+  <img src="{{recipe.image_url}}" alt="{{recipe.imageAlt}}" width="1000" height="700"
+       {{#unless eager}}loading="lazy"{{/unless}} decoding="async" referrerpolicy="no-referrer"
+       data-recipe-photo data-fallback-src="{{recipe.fallbackImage}}" data-fallback-alt="{{recipe.fallbackImageAlt}}">
+  <span class="recipe-image-caption" {{#unless recipe.imageIsIllustrative}}hidden{{/unless}}>Photo inspiration</span>
+</span>

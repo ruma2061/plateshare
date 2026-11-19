@@ -1,20 +1,25 @@
 <main class="container recipe-page py-4 py-md-5">
-  <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
-    <div>
-      <p class="recipe-eyebrow mb-2">{{#if isLibrary}}A little collection of good taste{{else}}Discover · Cook · Share{{/if}}</p>
-      <h1 class="fw-bold mb-2">{{#if isLibrary}}My Recipes{{else}}Your next great bite{{/if}}</h1>
-      {{#unless isLibrary}}<p class="text-secondary mb-0">Something worth making. Something worth keeping.</p>{{/unless}}
-    </div>
-    {{#if isLibrary}}
+  {{#if isLibrary}}
+    <div class="page-heading mb-4">
+      <div><p class="recipe-eyebrow mb-2">A little collection of good taste</p><h1 class="fw-bold mb-2">My Recipes</h1></div>
       <a class="btn btn-outline-success" href="/recipes">
         Browse recipes
       </a>
-    {{else}}
-      <a class="btn btn-success" href="/recipes/new">
-        + Post Recipe
-      </a>
-    {{/if}}
-  </div>
+    </div>
+  {{else}}
+    <section class="discovery-hero" aria-labelledby="discover-title">
+      <div class="discovery-hero-copy">
+        <p class="recipe-eyebrow">From our kitchens to yours</p>
+        <h1 id="discover-title">Find your next<br>favorite plate.</h1>
+        <p>A little inspiration. A new favorite.<br>Good food is even better shared.</p>
+        <a class="btn btn-light" href="/recipes/new">{{> icon plus=true}} Share a recipe</a>
+      </div>
+      <div class="discovery-hero-photo">
+        <img src="/resources/images/recipes/pasta.jpg" alt="A fresh bowl of pasta with green pesto" width="1000" height="700" fetchpriority="high">
+        <span class="hero-photo-note">Something delicious starts here.</span>
+      </div>
+    </section>
+  {{/if}}
 
   {{#if isLibrary}}
     <div class="profile-identity library-identity mb-4">
@@ -34,7 +39,16 @@
 
   {{> recipe-filters}}
 
-  <p class="small text-secondary">{{total}} recipes{{#if hasSearch}} matching “{{q}}”{{/if}}{{#if isRated}} · Your scores out of 10{{/if}}</p>
+  {{#unless isLibrary}}
+    <nav class="recipe-topics" aria-label="Recipe inspiration">
+      {{#each topics}}<a href="{{url}}" {{#if active}}class="active" aria-current="page"{{/if}}>{{label}}</a>{{/each}}
+    </nav>
+  {{/unless}}
+
+  <div class="recipe-results-heading">
+    <h2 class="h4 mb-0">{{#if hasSearch}}Search results{{else if isRated}}Your rated recipes{{else if isSaved}}Saved for later{{else}}Recipes to try{{/if}}</h2>
+    <p class="text-secondary mb-0" role="status">{{total}} recipes{{#if hasSearch}} matching “{{q}}”{{/if}}{{#if isRated}} · Your scores out of 10{{/if}}</p>
+  </div>
   {{#if recipes.length}}
     {{#if isRated}}
       <div class="recipe-ranking">{{#each recipes}}{{> recipe-row recipe=this}}{{/each}}</div>
@@ -56,7 +70,8 @@
         <a class="btn btn-success" href="/recipes">Browse recipes</a>
       {{else}}
         <h2 class="h4">No recipes yet</h2>
-        <p class="text-secondary mb-0">Recipes will appear here once they have been added to PlateShare.</p>
+        <p class="text-secondary">Every great cookbook starts with one recipe. Share something you love to make.</p>
+        <a class="btn btn-success" href="/recipes/new">Share the first recipe</a>
       {{/if}}
     </section>
   {{/if}}
