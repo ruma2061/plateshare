@@ -1,8 +1,10 @@
 
-<div class="container mt-4">
+<div class="container recipe-page profile-settings py-4 py-md-5">
   <h2>Edit Profile</h2>
+  {{#if updated}}<div class="alert alert-success" role="status">Your profile has been saved.</div>{{/if}}
+  {{#if profileError}}<div class="alert alert-danger" role="alert">{{profileError}}</div>{{/if}}
   <h5 class="mt-4">About You</h5>
-  <form action="/profile/details" method="POST" class="mb-4">
+  <form action="/profile/details" method="POST" enctype="multipart/form-data" class="mb-4" data-profile-form>
     <input type="hidden" name="_csrf" value="{{csrfToken}}">
     <div class="mb-3">
       <label for="display_name" class="form-label">Display name</label>
@@ -14,11 +16,32 @@
       <label for="bio" class="form-label">Bio (optional)</label>
       <textarea id="bio" name="bio" class="form-control" maxlength="280" rows="3">{{profileUser.bio}}</textarea>
     </div>
+    <fieldset class="mb-4" data-profile-photo>
+      <legend class="fs-6 fw-semibold">Profile photo</legend>
+      <div class="profile-photo-dropzone" data-photo-dropzone>
+        <div class="profile-photo-preview">
+          <img data-photo-preview {{#if profileUser.avatar_url}}src="{{profileUser.avatar_url}}"{{else}}hidden{{/if}} alt="Profile photo preview">
+          <span data-photo-placeholder {{#if profileUser.avatar_url}}hidden{{/if}} aria-hidden="true">{{> icon person=true}}</span>
+        </div>
+        <div class="profile-photo-controls">
+          <p class="fw-semibold mb-1">Drag a photo here</p>
+          <p id="photo-help" class="small text-muted mb-2">JPG, PNG, or WebP · Up to 5 MB. A square crop looks best.</p>
+          <label for="avatar_photo" class="form-label">Choose photo</label>
+          <input id="avatar_photo" name="avatar_photo" class="form-control" type="file"
+            accept="image/jpeg,image/png,image/webp" aria-describedby="photo-help photo-status" data-photo-input>
+          <p id="photo-status" class="small mb-0 mt-2" role="status" aria-live="polite" data-photo-status>Changes are saved when you select Save profile.</p>
+        </div>
+      </div>
+      <label class="form-check mt-2">
+        <input type="checkbox" name="remove_photo" value="1" class="form-check-input" data-photo-remove>
+        <span class="form-check-label">Remove photo when saved</span>
+      </label>
+    </fieldset>
     <div class="mb-3">
-      <label for="avatar_url" class="form-label">Photo URL (optional)</label>
+      <label for="avatar_url" class="form-label">Or use a photo URL (optional)</label>
       <input id="avatar_url" name="avatar_url" class="form-control"
-        type="url" maxlength="2000" value="{{profileUser.avatar_url}}">
-      <small class="text-muted">Use an HTTPS image URL.</small>
+        type="url" maxlength="2000" value="{{avatarInputUrl}}" data-photo-url>
+      <small class="text-muted">Use an HTTPS image URL. A selected file takes priority.</small>
     </div>
     <button type="submit" class="btn btn-primary">Save profile</button>
   </form>
@@ -82,3 +105,4 @@
 
   </form>
 </div>
+<script src="/resources/js/profile-photo.js" defer></script>

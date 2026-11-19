@@ -3,6 +3,7 @@ const auth = require('../middleware/auth');
 const { verifyCsrf } = require('../middleware/csrf');
 const { recipeVisibility } = require('../recipes/visibility');
 const { parseProfileDetails } = require('./profile');
+const { receiveProfilePhoto, encodeProfilePhoto, profilePhotoFields } = require('../profiles/photo');
 
 function createOnboardingRouter(db) {
   const router = express.Router();
@@ -93,10 +94,32 @@ function createOnboardingRouter(db) {
     return res.redirect(303, '/recipes');
   }));
 
-  router.post('/profile/details', auth, verifyCsrf, asyncRoute(async (req, res) => {
+  router.post('/profile/details', auth, receiveProfilePhoto, verifyCsrf, asyncRoute(async (req, res) => {
+    const current = await db.one(
+      'SELECT username, display_name, bio, avatar_url, is_private FROM users WHERE user_id = $1',
+      [req.session.user.user_id]
+    );
     let profile;
-    try { profile = parseProfileDetails(req.body); }
-    catch (error) { return res.status(400).send(error.message); }
+    try {
+      if (req.photoUploadError) throw new Error(req.photoUploadError);
+      profile = parseProfileDetails({
+        ...req.body, avatar_url: req.file || req.body.remove_photo === '1' ? '' : req.body.avatar_url,
+      });
+      if (req.file) profile.avatarUrl = await encodeProfilePhoto(req.file);
+      else if (req.body.remove_photo === '1') profile.avatarUrl = null;
+      else if (!profile.avatarUrl && current.avatar_url?.startsWith('data:image/jpeg;base64,')) {
+        profile.avatarUrl = current.avatar_url;
+      }
+    } catch (error) {
+      return res.status(400).render('pages/edit-profile', {
+        profileUser: { ...current,
+          display_name: typeof req.body.display_name === 'string' ? req.body.display_name : current.display_name,
+          bio: typeof req.body.bio === 'string' ? req.body.bio : current.bio,
+        },
+        avatarInputUrl: typeof req.body.avatar_url === 'string' ? req.body.avatar_url : profilePhotoFields(current).avatarInputUrl,
+        profileError: `${error.message} If you selected a photo, choose it again before saving.`,
+      });
+    }
     await db.none(`UPDATE users SET display_name = $1, bio = $2, avatar_url = $3
       WHERE user_id = $4`, [profile.displayName, profile.bio, profile.avatarUrl, req.session.user.user_id]);
     return res.redirect(303, '/settings/profile?updated=1');
