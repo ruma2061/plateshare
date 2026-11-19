@@ -172,7 +172,7 @@ test('edit is a viewable username and settings remain separate', async () => {
 
 test('repeated search and registration fields return 400 and the app keeps serving', async () => {
   const viewer = await site.client(3);
-  assert.equal((await viewer.request('/discover?q=a&q=b')).status, 400);
+  assert.equal((await viewer.request('/discover/cooks?q=a&q=b')).status, 400);
   const guest = await site.client();
   assert.equal((await guest.request('/register', [
     ['username', 'first'], ['username', 'second'], ['password', 'password123'],

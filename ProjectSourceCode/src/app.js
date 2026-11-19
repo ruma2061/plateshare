@@ -73,12 +73,18 @@ function createApp(db, { sessionSecret = process.env.SESSION_SECRET } = {}) {
   //              API Routes
   // *****************************************************
 
-
   app.get('/', (req, res) => {
     if (req.session.user) {
       return res.redirect('/profile');
     }
     res.redirect('/login');
+  });
+
+  app.get('/welcome', (req,res) => {
+    res.json({
+      status: 'success',
+      message: 'Welcome!'
+    });
   });
 
   app.get('/register', (req, res) => {
