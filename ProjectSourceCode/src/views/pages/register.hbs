@@ -1,42 +1,28 @@
-<div class="container mt-3 mt-md-5">
-  <div class="row justify-content-center">
-    <div class="col-12 col-sm-10 col-md-7 col-lg-5">
-      <h2>Register</h2>
-
-      {{#if error}}
-        <div class="alert alert-danger" role="alert">
-          {{message}}
-        </div>
-      {{/if}}
-
+<main class="container auth-page">
+  <div class="auth-layout">
+    <section class="auth-story" aria-label="Join the PlateShare community">
+      <img src="/resources/images/recipes/salad.jpg" alt="A colorful bowl of fresh vegetables" width="1000" height="700">
+      <div class="auth-story-copy"><h2>A seat at<br>the table.</h2><p>Find your people. Share your plates.</p></div>
+    </section>
+    <section class="auth-form" aria-labelledby="register-title">
+      <p class="recipe-eyebrow">Welcome to PlateShare</p>
+      <h1 id="register-title">Make yourself at home.</h1>
+      <p class="mb-4">Keep your favorites and discover what’s cooking.</p>
+      {{#if error}}<div class="alert alert-danger" role="alert">{{message}}</div>{{/if}}
       <form action="/register" method="POST">
         <div class="mb-3">
           <label for="username" class="form-label">Username</label>
-          <input
-            type="text"
-            class="form-control"
-            id="username"
-            name="username"
-            value="{{username}}"
-            required
-          />
+          <input type="text" class="form-control" id="username" name="username" value="{{username}}" autocomplete="username" minlength="3" maxlength="20" pattern="[A-Za-z0-9_]{3,20}" aria-describedby="username-help" required>
+          <p id="username-help" class="form-text">3–20 characters. Use letters, numbers, or underscores.</p>
         </div>
-
-        <div class="mb-3">
+        <div class="mb-4">
           <label for="password" class="form-label">Password</label>
-          <input
-            type="password"
-            class="form-control"
-            id="password"
-            name="password"
-            required
-          />
+          <input type="password" class="form-control" id="password" name="password" autocomplete="new-password" minlength="8" aria-describedby="password-help" required>
+          <p id="password-help" class="form-text">At least 8 characters.</p>
         </div>
-
-        <button type="submit" class="btn btn-primary w-100">
-          Register
-        </button>
+        <button type="submit" class="btn btn-primary w-100">Register</button>
       </form>
-    </div>
+      <p class="mt-4 mb-0">Already have an account? <a href="/login">Log in</a></p>
+    </section>
   </div>
-</div>
+</main>

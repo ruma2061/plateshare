@@ -47,6 +47,23 @@ test('catalog and recipe detail render real ingredients, nutrition and zero with
   assert.match(await (await alice.request('/recipes')).text(), /Official rice/);
 });
 
+test('source links stay out of recipe copy and every view has a locally served fallback photo', async () => {
+  const description = 'Source: www.food.com/recipe/garden-soup-123';
+  await db.none('UPDATE recipes SET description = $1 WHERE recipe_id = 1', [description]);
+  await db.none('INSERT INTO saved_recipes (user_id, recipe_id) VALUES (1, 1)');
+  await db.none('INSERT INTO ratings (user_id, recipe_id, rating) VALUES (1, 1, 5)');
+  const alice = await site.client(1);
+  for (const url of ['/recipes', '/recipes/1', '/my-recipes', '/my-recipes?view=rated', '/profile/alice']) {
+    const html = await (await alice.request(url)).text();
+    assert.doesNotMatch(html, /www\.food\.com|Source:/);
+    assert.match(html, /src="\/resources\/images\/recipes\/soup\.jpg"/);
+  }
+  const image = await alice.request('/resources/images/recipes/soup.jpg');
+  assert.equal(image.status, 200);
+  assert.match(image.headers.get('content-type'), /image\/jpeg/);
+  assert.equal((await db.one('SELECT description FROM recipes WHERE recipe_id = 1')).description, description);
+});
+
 test('saving is idempotent, persists across sessions and ignores submitted user IDs', async () => {
   const alice = await site.client(1);
   for (let i = 0; i < 2; i++) {

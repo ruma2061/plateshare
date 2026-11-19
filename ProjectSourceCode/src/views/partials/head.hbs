@@ -8,11 +8,11 @@
   />
   <meta name="description" content="Discover your next great bite. Save recipes, explore nutrition and share your kitchen with friends on PlateShare." />
 
-  <!-- TODO: Include the `title` partial here -->
   {{> title }}
 
   <link href="/vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
   <link href="/resources/css/style.css" rel="stylesheet">
 {{#if recipeStyles}}<link href="/resources/css/recipes.css" rel="stylesheet">{{/if}}
+  <script src="/resources/js/recipe-photos.js" defer></script>
 </head>
 <body class="h-100 d-flex flex-column{{#if user}} signed-in{{/if}}">

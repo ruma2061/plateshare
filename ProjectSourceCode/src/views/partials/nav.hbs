@@ -1,7 +1,7 @@
 <a class="skip-link" href="#main-content">Skip to content</a>
 <header class="site-header">
   <nav class="container site-navigation" aria-label="Main navigation">
-    <a class="site-brand" href="{{#if user}}/recipes{{else}}/login{{/if}}">PlateShare<span aria-hidden="true">.</span></a>
+    <a class="site-brand" href="{{#if user}}/recipes{{else}}/login{{/if}}"><span class="brand-mark">{{> icon bowl=true}}</span>PlateShare<span class="brand-dot" aria-hidden="true">.</span></a>
     {{#if user}}
       <div class="desktop-navigation">
         <a href="/recipes" {{#if recipesActive}}aria-current="page"{{/if}}>Discover</a>

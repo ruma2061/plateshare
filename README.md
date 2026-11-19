@@ -57,11 +57,23 @@ migrations; changing `create.sql` alone will not update an existing database.
   requests. Other profiles retain follow/unfollow/request controls.
 - **Find cooks** (`/discover`): the team's username search for finding profiles.
 
-These pages use the repository wireframes' green/cream palette, recipe imagery,
+These pages use a forest-green palette, photo-led recipe cards,
 rounded statistics and tabs, with bottom navigation on mobile. List positions
 reflect the selected sort. Rating badges explicitly use the existing 1–5 scale.
 Bootstrap is served locally from the pinned npm package, so page layouts do not
 depend on a third-party CDN being reachable.
+
+Discover includes recipe search, sorting and quick topic links. Recipe pages put
+ingredients and directions first, with checkboxes for following along while cooking.
+Login, registration, cook search and recipe posting share the same responsive style.
+
+Imported `Source: ...` descriptions and raw recipe URLs are hidden in recipe reading
+copy. The stored descriptions and original attribution in the seed data are preserved.
+Uploaded recipe photos take precedence; recipes without a photo get a bundled,
+title-matched category photograph labeled **Photo inspiration**. Broken external
+photos fall back to that same local image. These illustrative photos are also used
+in collections, profiles and rating comparisons. See
+`ProjectSourceCode/src/resources/images/recipes/SOURCES.md` for photo sources.
 
 `recipes.calories` (kcal), `protein_g`, `carbs_g` and `fat_g` (grams) always refer
 to **one serving**, not the whole recipe. Values are optional, nonnegative and
@@ -74,8 +86,8 @@ recipe posting (#6), food API integration (#9), and Discover/feed work (#15/#16)
 remain independent features. The collection and profile immediately reflect
 rows they add to the existing `recipes` and `ratings` tables. The recipe catalog
 is `/recipes`; the existing `/discover` route remains the team's user search.
-A fresh database has no
-recipes, so it will show an empty state until recipes are posted or imported.
+A fresh database loads the bundled recipe catalog. Newly posted recipes appear
+alongside the imported recipes.
 
 All new routes require login. The POST routes `/recipes/:recipeId/save`,
 `/recipes/:recipeId/unsave` and `/recipes/:recipeId/nutrition` use a session-bound
@@ -101,7 +113,7 @@ With Node 20 or newer:
 ```sh
 cd ProjectSourceCode
 npm ci
-npm test
+npm run test:node
 ```
 
 Tests run the production Express app, sessions, Handlebars templates and SQL against
@@ -110,6 +122,13 @@ database. They cover migrations, validation, account isolation, CSRF, save/remov
 nutrition ownership, rating history, profiles, follow/privacy transitions,
 registration/login, pagination, escaping and error states.
 Docker with PostgreSQL 17 remains the application runtime.
+The complete imported catalog is checked for available photo assets and hidden
+source-only descriptions. Test migrations exclude the one-time catalog seed;
+catalog coverage explicitly opts into seeding.
+
+`npm test` also runs the Lab 10 Mocha suite, which requires an isolated PostgreSQL
+database and test environment variables. See `ProjectSourceCode/test/README.md`
+for its setup.
 
 To check the pages manually, log in, open an existing recipe, save it, and verify
 it appears under My Recipes. Remove it and verify its rating is still in Rated.

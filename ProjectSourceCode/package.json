@@ -18,7 +18,8 @@
         "test": "npm run test:lab10 && npm run test:recipes && npm run test:security",
         "test:security": "node --test test/session-security.test.js test/password-security.test.js",
         "test:lab10": "mocha --timeout 10000 \"test/**/*.spec.js\"",
-        "test:recipes": "node --test test/recipe-posting.test.js test/rating-routes.test.js"
+        "test:recipes": "node --test test/recipe-posting.test.js test/rating-routes.test.js",
+        "test:node": "node --test test/*.test.js"
     },
     "devDependencies": {
         "@electric-sql/pglite": "^0.5.14",
