@@ -80,9 +80,7 @@ function createRecipeRouter(db) {
     // Escape LIKE wildcards so a search for '%' or '_' means that literal text.
     const search = `%${q.replace(/[\\%_]/g, '\\$&')}%`;
     const collection = isLibrary ? (view === 'rated' ? 'AND my_rating.rating_id IS NOT NULL' : 'AND saved.recipe_id IS NOT NULL') : '';
-    const visibleRecipes = isLibrary
-      ? recipeVisibility
-      : '(r.user_id IS NULL OR u.is_private = FALSE)';
+    const visibleRecipes = recipeVisibility;
 
     const filter = `WHERE ${visibleRecipes} AND (r.title ILIKE $2 OR COALESCE(r.cuisine, '') ILIKE $2) ${collection}`;
     const count = await db.one(`SELECT COUNT(*)::int AS total FROM (${selectRecipe} ${filter}) matching`, [userId, search]);

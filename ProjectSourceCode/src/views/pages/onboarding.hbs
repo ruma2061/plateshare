@@ -1,0 +1,85 @@
+<main class="container py-4 py-md-5" style="max-width: 850px">
+  <p class="text-secondary mb-2">Welcome to PlateShare</p>
+  <h1>{{title}}</h1>
+  <p class="text-muted">{{#if isProfile}}Step 1 of 3: Make your cooking profile yours.{{else if isFriends}}Step 2 of 3: Connect with other home cooks.{{else}}Step 3 of 3: Rate recipes you have actually tried.{{/if}}</p>
+  {{#if error}}<div class="alert alert-danger" role="alert">{{error}}</div>{{/if}}
+
+  {{#if isProfile}}
+    <form action="/onboarding/profile" method="POST" class="mt-4">
+      <input type="hidden" name="_csrf" value="{{csrfToken}}">
+      <div class="mb-3">
+        <label for="display_name" class="form-label">Display name</label>
+        <input id="display_name" class="form-control" name="display_name" maxlength="60" minlength="2" required value="{{profileUser.display_name}}">
+        <small class="text-muted">Your username stays the same.</small>
+      </div>
+      <div class="mb-3">
+        <label for="bio" class="form-label">Bio (optional)</label>
+        <textarea id="bio" name="bio" class="form-control" maxlength="280" rows="3">{{profileUser.bio}}</textarea>
+      </div>
+      <div class="mb-3">
+        <label for="avatar_url" class="form-label">Photo URL (optional)</label>
+        <input id="avatar_url" name="avatar_url" class="form-control" type="url" maxlength="2000" placeholder="https://example.com/photo.jpg" value="{{profileUser.avatar_url}}">
+        <small class="text-muted">Use a public HTTPS image URL. File uploads can be added later.</small>
+      </div>
+      <fieldset class="mb-3">
+        <legend class="fs-6">Account visibility</legend>
+        <label class="d-block mb-2"><input type="radio" name="is_private" value="false" {{#unless profileUser.is_private}}checked{{/unless}}> Public (anyone can see your recipes)</label>
+        <label class="d-block"><input type="radio" name="is_private" value="true" {{#if profileUser.is_private}}checked{{/if}}> Private (only approved followers can see your recipes)</label>
+      </fieldset>
+      <button class="btn btn-success" type="submit">Continue to friends</button>
+    </form>
+  {{/if}}
+
+  {{#if isFriends}}
+    <p>You can follow public accounts immediately. Private accounts require approval.</p>
+    <div class="list-group mb-4">
+      {{#each profiles}}
+        <div class="list-group-item d-flex justify-content-between align-items-center gap-2">
+          <div><a href="/profile/{{username}}">{{#if display_name}}{{display_name}}{{else}}{{username}}{{/if}}</a>
+            <small class="text-secondary">@{{username}}{{#if is_private}} · Private{{/if}}</small></div>
+          {{#if is_following}}<span class="text-success">Following</span>
+          {{else if request_pending}}<span class="text-secondary">Requested</span>
+          {{else}}
+            <form action="/follow/{{user_id}}" method="POST">
+              <input type="hidden" name="_csrf" value="{{@root.csrfToken}}">
+              <input type="hidden" name="returnTo" value="/onboarding/friends">
+              <button class="btn btn-outline-success btn-sm" type="submit">{{#if is_private}}Request to follow{{else}}Follow{{/if}}</button>
+            </form>
+          {{/if}}
+        </div>
+      {{else}}<p class="text-muted">No other cooks have joined yet. You can find them later.</p>{{/each}}
+    </div>
+    <form action="/onboarding/friends/continue" method="POST">
+      <input type="hidden" name="_csrf" value="{{csrfToken}}">
+      <button class="btn btn-success" type="submit">Continue (or skip)</button>
+    </form>
+  {{/if}}
+
+  {{#if isTaste}}
+    <p>Only rate recipes you've tried. Each choice uses PlateShare's existing comparison-based ranking system.</p>
+    <div class="row row-cols-1 row-cols-md-2 g-3 mb-4">
+      {{#each recipes}}
+        <div class="col">
+          <article class="border rounded p-3 h-100">
+            {{#if image_url}}<img src="{{image_url}}" alt="" class="w-100 rounded mb-2" style="max-height:140px;object-fit:cover" loading="lazy">{{/if}}
+            <h2 class="h6"><a href="/recipes/{{recipe_id}}">{{title}}</a></h2>
+            <p class="small text-muted">By {{author}}</p>
+            <form action="/recipes/{{recipe_id}}/rate" method="POST">
+              <input type="hidden" name="_csrf" value="{{@root.csrfToken}}">
+              <input type="hidden" name="returnTo" value="/onboarding/taste">
+              <div class="d-flex gap-1">
+                <button class="btn btn-outline-success btn-sm" type="submit" name="sentiment" value="like">Liked it</button>
+                <button class="btn btn-outline-secondary btn-sm" type="submit" name="sentiment" value="ok">It was OK</button>
+                <button class="btn btn-outline-danger btn-sm" type="submit" name="sentiment" value="dislike">Didn't like it</button>
+              </div>
+            </form>
+          </article>
+        </div>
+      {{else}}<p class="text-muted">No recipes are available to rate yet. You can still explore PlateShare.</p>{{/each}}
+    </div>
+    <form action="/onboarding/complete" method="POST">
+      <input type="hidden" name="_csrf" value="{{csrfToken}}">
+      <button class="btn btn-success" type="submit">Finish and explore Discover</button>
+    </form>
+  {{/if}}
+</main>

@@ -3,6 +3,7 @@
 // *****************************************************
 
 const { createRecipeRouter } = require('./recipes/router');
+const { createOnboardingRouter } = require('./onboarding/router');
 const { loadProfileContent } = require('./profiles/content');
 const { prepareCsrf, verifyCsrf } = require('./middleware/csrf');
 const auth = require('./middleware/auth');
@@ -116,15 +117,24 @@ function createApp(db, { sessionSecret = process.env.SESSION_SECRET } = {}) {
   app.use('/resources', express.static(path.join(__dirname, 'resources')));
   app.use('/vendor/bootstrap', express.static(path.join(__dirname, '../node_modules/bootstrap/dist')));
   app.use(createRecipeRouter(db));
+  app.use(createOnboardingRouter(db));
 
   /**
    * GET /profile
    * Redirect logged-in users to their own profile.
    */
-  app.get('/profile', auth, (req, res) => {
-    return res.redirect(
-      `/profile/${encodeURIComponent(req.session.user.username)}`
-    );
+  app.get('/profile', auth, async (req, res) => {
+    try {
+      const user = await db.one(
+        'SELECT onboarding_completed FROM users WHERE user_id = $1',
+        [req.session.user.user_id]
+      );
+      if (!user.onboarding_completed) return res.redirect('/onboarding');
+      return res.redirect(`/profile/${encodeURIComponent(req.session.user.username)}`);
+    } catch (error) {
+      console.error('Unable to check onboarding status:', error);
+      return res.status(500).send('Unable to load profile');
+    }
   });
 
   async function canViewProfileContent(viewerId, profileUser) {
@@ -153,7 +163,7 @@ function createApp(db, { sessionSecret = process.env.SESSION_SECRET } = {}) {
   app.get('/settings/profile', auth, async (req, res) => {
     try {
       const profileUser = await db.one(
-        `SELECT username, is_private
+        `SELECT username, display_name, bio, avatar_url, is_private
          FROM users
          WHERE user_id = $1`,
         [req.session.user.user_id]
@@ -176,7 +186,7 @@ function createApp(db, { sessionSecret = process.env.SESSION_SECRET } = {}) {
     try {
       // Get the profile being viewed
       const profileUser = await db.oneOrNone(
-        `SELECT user_id, username, is_private, TO_CHAR(created_at, 'Mon YYYY') AS member_since
+        `SELECT user_id, username, display_name, bio, avatar_url, is_private, TO_CHAR(created_at, 'Mon YYYY') AS member_since
          FROM users
          WHERE username = $1`,
         [username]
@@ -454,7 +464,7 @@ function createApp(db, { sessionSecret = process.env.SESSION_SECRET } = {}) {
     try {
       const hash = await bcrypt.hash(password, 10);
       await db.none(
-        'INSERT INTO users (username, password_hash) VALUES ($1, $2);',
+        'INSERT INTO users (username, password_hash, onboarding_completed) VALUES ($1, $2, FALSE);',
         [username, hash]
       );
       return res.redirect('/login');
@@ -553,7 +563,9 @@ function createApp(db, { sessionSecret = process.env.SESSION_SECRET } = {}) {
 
       return res.redirect(
         303,
-        `/profile/${encodeURIComponent(result.username)}`
+        req.body.returnTo === '/onboarding/friends'
+          ? '/onboarding/friends'
+          : `/profile/${encodeURIComponent(result.username)}`
       );
 
     } catch (error) {

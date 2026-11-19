@@ -3,9 +3,19 @@
 
   <p class="recipe-eyebrow">PlateShare · The people behind the plates</p>
   <div class="profile-identity">
-    <span class="profile-avatar" aria-hidden="true">{{profileInitial}}</span>
-    <div><h1>{{profileUser.username}}'s Profile</h1>
-      <p class="text-secondary mb-0">Member since {{profileUser.member_since}} · {{#if profileUser.is_private}}Private account{{else}}Public account{{/if}}</p>
+    {{#if profileUser.avatar_url}}
+      <img class="profile-avatar" src="{{profileUser.avatar_url}}"
+        alt="{{profileUser.username}}'s profile photo" referrerpolicy="no-referrer"
+        style="object-fit:cover;" loading="lazy">
+    {{else}}
+      <span class="profile-avatar" aria-hidden="true">{{profileInitial}}</span>
+    {{/if}}
+    <div>
+      <h1>{{#if profileUser.display_name}}{{profileUser.display_name}}{{else}}{{profileUser.username}}{{/if}}</h1>
+      <p class="text-secondary mb-0">@{{profileUser.username}} · Member since {{profileUser.member_since}} · {{#if profileUser.is_private}}Private account{{else}}Public account{{/if}}</p>
+      {{#if canViewContent}}
+        {{#if profileUser.bio}}<p class="mt-2 mb-0">{{profileUser.bio}}</p>{{/if}}
+      {{/if}}
     </div>
   </div>
 
