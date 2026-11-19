@@ -21,8 +21,8 @@ async function createSite(db) {
       }
       const request = (url, body) => fetch(`${base}${url}`, {
         method: body === undefined ? 'GET' : 'POST', redirect: 'manual',
-        headers: { cookie, ...(body === undefined ? {} : { 'Content-Type': 'application/x-www-form-urlencoded' }) },
-        body: body === undefined ? undefined : new URLSearchParams(body),
+        headers: { cookie, ...(body === undefined || body instanceof FormData ? {} : { 'Content-Type': 'application/x-www-form-urlencoded' }) },
+        body: body === undefined || body instanceof FormData ? body : new URLSearchParams(body),
       });
       let token;
       if (userId) {

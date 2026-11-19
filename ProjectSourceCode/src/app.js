@@ -5,6 +5,7 @@
 const { createRecipeRouter } = require('./recipes/router');
 const { createOnboardingRouter } = require('./onboarding/router');
 const { loadProfileContent } = require('./profiles/content');
+const { profilePhotoFields } = require('./profiles/photo');
 const { prepareCsrf, verifyCsrf } = require('./middleware/csrf');
 const auth = require('./middleware/auth');
 const express = require('express'); // To build an application server or API
@@ -170,7 +171,9 @@ function createApp(db, { sessionSecret = process.env.SESSION_SECRET } = {}) {
       );
 
       return res.render('pages/edit-profile', {
-        profileUser
+        profileUser,
+        ...profilePhotoFields(profileUser),
+        updated: req.query.updated === '1',
       });
 
     } catch (error) {
