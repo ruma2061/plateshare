@@ -9,7 +9,11 @@ CREATE TABLE IF NOT EXISTS users (
     username VARCHAR(20) UNIQUE NOT NULL,
     password_hash VARCHAR(255) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    is_private BOOLEAN NOT NULL DEFAULT FALSE
+    is_private BOOLEAN NOT NULL DEFAULT FALSE,
+    display_name VARCHAR(60),
+    bio VARCHAR(280),
+    avatar_url TEXT,
+    onboarding_completed BOOLEAN NOT NULL DEFAULT TRUE
 );
 
 

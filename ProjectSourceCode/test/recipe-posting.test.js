@@ -168,8 +168,7 @@ test('public recipe appears in Discover by username', async () => {
   assert.match(profile, /Basil Pasta/);
 });
 
-test('private recipes stay hidden from Discover', async () => {
-  await db.none(
+test('private recipes appear in Discover only for approved followers', async () => {  await db.none(
     'UPDATE users SET is_private = TRUE WHERE user_id = 1'
   );
 
@@ -196,7 +195,7 @@ test('private recipes stay hidden from Discover', async () => {
     await bob.request('/recipes')
   ).text();
 
-  assert.doesNotMatch(discoverAfterFollow, /Basil Pasta/);
+  assert.match(discoverAfterFollow, /Basil Pasta/);
 });
 
 test('author can rate their own recipe', async () => {

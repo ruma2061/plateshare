@@ -1,6 +1,28 @@
 
 <div class="container mt-4">
   <h2>Edit Profile</h2>
+  <h5 class="mt-4">About You</h5>
+  <form action="/profile/details" method="POST" class="mb-4">
+    <input type="hidden" name="_csrf" value="{{csrfToken}}">
+    <div class="mb-3">
+      <label for="display_name" class="form-label">Display name</label>
+      <input id="display_name" name="display_name" class="form-control"
+        maxlength="60" minlength="2" required
+        value="{{#if profileUser.display_name}}{{profileUser.display_name}}{{else}}{{profileUser.username}}{{/if}}">
+    </div>
+    <div class="mb-3">
+      <label for="bio" class="form-label">Bio (optional)</label>
+      <textarea id="bio" name="bio" class="form-control" maxlength="280" rows="3">{{profileUser.bio}}</textarea>
+    </div>
+    <div class="mb-3">
+      <label for="avatar_url" class="form-label">Photo URL (optional)</label>
+      <input id="avatar_url" name="avatar_url" class="form-control"
+        type="url" maxlength="2000" value="{{profileUser.avatar_url}}">
+      <small class="text-muted">Use an HTTPS image URL.</small>
+    </div>
+    <button type="submit" class="btn btn-primary">Save profile</button>
+  </form>
+
 
   <h5 class="mt-4">Account Privacy</h5>
 

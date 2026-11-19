@@ -15,6 +15,7 @@ services:
       - ./src/init_data/zz_002_profile_privacy.sql:/docker-entrypoint-initdb.d/02-profiles.sql:ro
       - ./src/init_data/zz_003_rating_comparisons.sql:/docker-entrypoint-initdb.d/03-ratings.sql:ro
       - ./src/init_data/zz_004_recipe_comments.sql:/docker-entrypoint-initdb.d/04-comments.sql:ro
+      - ./src/init_data/zz_005_onboarding.sql:/docker-entrypoint-initdb.d/05-onboarding.sql:ro
 
   tests:
     image: node:22.19.0-bookworm

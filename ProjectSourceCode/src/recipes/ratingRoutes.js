@@ -58,7 +58,11 @@ function registerRatingRoutes(router, { db, loadRecipe, asyncRoute, verifyCsrf }
     if (nextComparison(search) !== null) return res.redirect(303, `/recipes/${search.recipeId}/rate`);
     delete req.session.ratingSearch;
     await saveRating(req.session.user.user_id, search.recipeId, search.sentiment, search.list[search.low] ?? null);
-    return res.redirect(303, `/recipes/${search.recipeId}#rating`);
+    const destination = req.session.ratingReturnTo === '/onboarding/taste'
+      ? '/onboarding/taste'
+      : `/recipes/${search.recipeId}#rating`;
+    delete req.session.ratingReturnTo;
+    return res.redirect(303, destination);
   }
 
   const activeSearch = req => {
@@ -81,6 +85,7 @@ function registerRatingRoutes(router, { db, loadRecipe, asyncRoute, verifyCsrf }
       LEFT JOIN users u ON u.user_id = r.user_id
       WHERE ra.user_id = $1 AND ra.sentiment = $2 AND ra.recipe_id <> $3 AND ${recipeVisibility}
       ORDER BY ra.rank_position`, [userId, sentiment, req.recipeId])).map(row => row.recipe_id);
+    req.session.ratingReturnTo = req.body.returnTo === '/onboarding/taste' ? '/onboarding/taste' : null;
     req.session.ratingSearch = { recipeId: req.recipeId, sentiment, list, ...startSearch(list.length) };
     return continueSearch(req, res);
   }));
